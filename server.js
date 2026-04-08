@@ -2,14 +2,19 @@ const express = require('express');
 const multer = require('multer');
 const { google } = require('googleapis');
 
+console.log('GCP_PROJECT_ID:', process.env.GCP_PROJECT_ID);
+console.log('GCP_CLIENT_EMAIL:', process.env.GCP_CLIENT_EMAIL);
+
 // Build credentials from individual env vars
 const credentials = {
   type: 'service_account',
-  project_id: process.env.GCP_PROJECT_ID,
-  private_key: process.env.GCP_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-  client_email: process.env.GCP_CLIENT_EMAIL,
-  client_id: process.env.GCP_CLIENT_ID
+  project_id: process.env.GCP_PROJECT_ID || '',
+  private_key: (process.env.GCP_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
+  client_email: process.env.GCP_CLIENT_EMAIL || '',
+  client_id: process.env.GCP_CLIENT_ID || ''
 };
+
+console.log('Credentials loaded, client_email:', credentials.client_email);
 
 const auth = new google.auth.GoogleAuth({
   credentials,
