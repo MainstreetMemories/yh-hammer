@@ -1,4 +1,8 @@
 const credentials = {
+  console.log('Starting app...');
+console.log('GCP_PROJECT_ID:', process.env.GCP_PROJECT_ID ? 'SET' : 'MISSING');
+console.log('GCP_CLIENT_EMAIL:', process.env.GCP_CLIENT_EMAIL ? 'SET' : 'MISSING');
+console.log('GCP_PRIVATE_KEY_B64:', process.env.GCP_PRIVATE_KEY_B64 ? 'SET' : 'MISSING');
   type: 'service_account',
   project_id: process.env.GCP_PROJECT_ID || '',
   private_key: Buffer.from(process.env.GCP_PRIVATE_KEY_B64, 'base64').toString('utf8'),
