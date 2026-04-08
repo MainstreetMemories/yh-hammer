@@ -9,7 +9,7 @@ console.log('GCP_CLIENT_EMAIL:', process.env.GCP_CLIENT_EMAIL);
 const credentials = {
   type: 'service_account',
   project_id: process.env.GCP_PROJECT_ID || '',
-  private_key: process.env.GCP_PRIVATE_KEY.split('\\n').join('\n'),
+  private_key: process.env.GCP_PRIVATE_KEY.replace(/\\\\n/g, '\n'),
   client_email: process.env.GCP_CLIENT_EMAIL || '',
   client_id: process.env.GCP_CLIENT_ID || ''
 };
