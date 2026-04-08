@@ -16,3 +16,25 @@ const credentials = {
 };
 
 console.log('Credentials loaded, client_email:', credentials.client_email);
+const auth = new google.auth.GoogleAuth({
+  credentials,
+  scopes: ['https://www.googleapis.com/auth/spreadsheets']
+});
+
+console.log('Auth created, now creating sheets client...');
+
+const sheets = google.sheets({ version: 'v4', auth });
+console.log('Sheets client created');
+
+const SPREADSHEET_ID = '1YmEsM3AvtIbNqto8DoYLMO48tH13UY23niGvRz5vOtU';
+
+const app = express();
+const upload = multer({ dest: '/tmp' });
+
+app.use(express.static('public'));
+app.use(express.json());
+
+console.log('Express app configured');
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log('App running on port ' + PORT));
