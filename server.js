@@ -1,14 +1,15 @@
-import express from 'express';
-import multer from 'multer';
-import fs from 'fs';
-import { google } from 'googleapis';
-import path from 'path';
-import { fileURLToPath } from 'url';
+const express = require('express');
+const multer = require('multer');
+const { google } = require('googleapis');
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-// Get credentials from environment variable
-const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS || '{}');
+// Build credentials from individual env vars
+const credentials = {
+  type: 'service_account',
+  project_id: process.env.GCP_PROJECT_ID,
+  private_key: process.env.GCP_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+  client_email: process.env.GCP_CLIENT_EMAIL,
+  client_id: process.env.GCP_CLIENT_ID
+};
 
 const auth = new google.auth.GoogleAuth({
   credentials,
@@ -18,23 +19,16 @@ const auth = new google.auth.GoogleAuth({
 const sheets = google.sheets({ version: 'v4', auth });
 const SPREADSHEET_ID = '1YmEsM3AvtIbNqto8DoYLMO48tH13UY23niGvRz5vOtU';
 
-const UPLOAD_DIR = path.join(__dirname, 'uploads');
-if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-
 const app = express();
-const upload = multer({ dest: UPLOAD_DIR });
+const upload = multer({ dest: '/tmp' });
 
 app.use(express.static('public'));
 app.use(express.json());
 
 app.post('/api/upload', upload.single('contract'), async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    if (!req.file) return res.status(400).json({ error: 'No file' });
     
-    const newName = `${Date.now()}_${req.file.originalname}`;
-    fs.renameSync(req.file.path, path.join(UPLOAD_DIR, newName));
-    
-    // Simple test - just add placeholder row
     const month = 'March';
     const rowData = ['Test Address', '', '3/15/26', '', '', 'Test Owner', '$5000', '$0', '$0', '$0', '$5000', '$500', '', 'Check', '', '', '', '', '', '', '', '', '', '', ''];
     
@@ -51,12 +45,11 @@ app.post('/api/upload', upload.single('contract'), async (req, res) => {
       requestBody: { values: [rowData] }
     });
     
-    res.json({ success: true, month, owner: 'Test Owner', file: newName });
+    res.json({ success: true, month, owner: 'Test' });
   } catch (err) {
-    console.error('Error:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`App running on port ${PORT}`));
+app.listen(PORT, () => console.log('App running on port ' + PORT));
