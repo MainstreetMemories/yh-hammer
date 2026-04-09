@@ -252,9 +252,15 @@ except:
     
     console.log('Extracted PDF text length:', pdfText.length);
     
+    // Check if PDF has real text content
+    if (pdfText.length < 10) {
+      console.log('PDF text extraction failed - cannot read scanned PDF');
+      return res.json({ error: 'Cannot read this PDF. It may be a scanned image. Please use Edit Records to enter manually.' });
+    }
+    
     // Step 2: Use AI to parse the text
     const aiText = await extractWithAI(pdfText);
-    console.log('AI Extracted:', aiText ? aiText.substring(0, 200) : 'empty');
+    console.log('AI Extracted:', aiText ? aiText.substring(0, 300) : 'empty');
     
     // Step 3: Parse into fields
     const data = parseOCR(aiText || pdfText);
@@ -264,9 +270,9 @@ except:
     console.log('Month:', month);
     
     // Validate we have real data before saving
-    if (!data.owner || data.owner === 'Unknown') {
+    if (!data.owner || data.owner === 'Unknown' || data.owner.length < 3) {
       console.log('No valid data extracted - not saving to spreadsheet');
-      return res.json({ error: 'Could not extract contract data. Please enter manually or try a different PDF.' });
+      return res.json({ error: 'Could not extract valid contract data. Please enter manually using Edit Records.' });
     }
     
     const rowData = [
