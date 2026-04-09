@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Yellow Hammer Properties</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
     body { font-family: 'Inter', sans-serif; }
@@ -16,15 +17,12 @@
 <body class="bg-gray-900 min-h-screen">
   <div class="max-w-md mx-auto p-4">
     <div class="text-center mb-8 pt-4">
-      <div id="logo-container">
-        <h1 class="text-3xl font-bold text-amber-500">YELLOW HAMMER</h1>
-        <p class="text-gray-400 text-sm">PROPERTIES, INC.</p>
-      </div>
+      <h1 class="text-3xl font-bold text-amber-500">YELLOW HAMMER</h1>
+      <p class="text-gray-400 text-sm">PROPERTIES, INC.</p>
     </div>
 
     <div id="status" class="hidden mb-4 p-3 rounded-lg text-center"></div>
 
-    <!-- Main Menu -->
     <div id="menu" class="grid gap-4">
       <button onclick="startUpload()" class="btn-primary w-full py-6 px-6 rounded-xl text-white font-semibold text-lg shadow-lg flex items-center justify-center gap-3">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -43,30 +41,18 @@
       <input type="file" id="file-input" accept=".pdf,.jpg,.jpeg,.png" class="hidden" onchange="handleFileSelect(event)">
     </div>
 
-    <!-- Jobs List View -->
     <div id="jobs-view" class="hidden">
-      <button onclick="showMenu()" class="mb-4 text-amber-500 flex items-center gap-2">
-        ← Back to Menu
-      </button>
+      <button onclick="showMenu()" class="mb-4 text-amber-500 flex items-center gap-2">← Back to Menu</button>
       <h2 class="text-white text-xl font-semibold mb-4">Edit Records</h2>
-      
-      <!-- Month Tabs -->
       <div id="month-tabs" class="flex flex-wrap gap-2 mb-4"></div>
-      
-      <!-- Jobs List -->
       <div id="jobs-list" class="space-y-2"></div>
     </div>
 
-    <!-- Job Detail View -->
     <div id="detail-view" class="hidden">
-      <button onclick="showJobsList()" class="mb-4 text-amber-500 flex items-center gap-2">
-        ← Back to Jobs
-      </button>
+      <button onclick="showJobsList()" class="mb-4 text-amber-500 flex items-center gap-2">← Back to Jobs</button>
       <h2 class="text-white text-xl font-semibold mb-4" id="detail-owner"></h2>
       <h3 class="text-gray-400 text-sm mb-4" id="detail-address"></h3>
-      
       <div id="detail-fields" class="space-y-4"></div>
-      
       <div class="flex gap-2 mt-6">
         <button onclick="prevPage()" class="flex-1 py-3 bg-gray-700 text-white rounded-lg">← Previous</button>
         <button onclick="nextPage()" class="flex-1 py-3 bg-gray-700 text-white rounded-lg">Next →</button>
@@ -88,12 +74,11 @@
   </div>
 
   <script>
+    // Initialize PDF.js
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
     const API_URL = window.location.origin;
-    let allJobs = {};
-    let currentMonth = '';
-    let currentJobs = [];
-    let currentJobIndex = 0;
-    let currentPage = 0;
+    let allJobs = {}, currentMonth = '', currentJobs = [], currentJobIndex = 0, currentPage = 0;
 
     const fieldPages = [
       { title: 'Property', fields: ['address', 'owner', 'phone', 'email'] },
@@ -118,7 +103,7 @@
       el.className = `mb-4 p-3 rounded-lg text-center ${isError ? 'bg-red-900 text-red-200' : 'bg-green-900 text-green-200'}`;
       el.textContent = message;
       el.classList.remove('hidden');
-      setTimeout(() => el.classList.add('hidden'), 5000);
+      setTimeout(() => el.classList.add('hidden'), 7000);
     }
 
     function showProgress(show, text = 'Processing...') {
@@ -133,45 +118,34 @@
       document.getElementById('detail-view').classList.add('hidden');
     }
 
-    function showEditRecords() {
+    async function showEditRecords() {
       showProgress(true, 'Loading records...');
-      fetch(`${API_URL}/api/jobs`)
-        .then(r => r.json())
-        .then(jobs => {
-          allJobs = jobs;
-          const months = Object.keys(jobs);
-          const currentMonthIdx = months.indexOf('April');
-          currentMonth = months[currentMonthIdx >= 0 ? currentMonthIdx : 0] || months[0];
-          showMonthTabs(months);
-          showJobsForMonth(currentMonth);
-          document.getElementById('menu').classList.add('hidden');
-          document.getElementById('jobs-view').classList.remove('hidden');
-        })
-        .catch(err => showStatus('Error loading records', true))
-        .finally(() => showProgress(false));
+      fetch(`${API_URL}/api/jobs`).then(r => r.json()).then(jobs => {
+        allJobs = jobs;
+        const months = Object.keys(jobs);
+        currentMonth = months.includes('April') ? 'April' : months[0] || 'April';
+        showMonthTabs(months);
+        showJobsForMonth(currentMonth);
+        document.getElementById('menu').classList.add('hidden');
+        document.getElementById('jobs-view').classList.remove('hidden');
+      }).catch(err => showStatus('Error loading records', true)).finally(() => showProgress(false));
     }
 
     function showMonthTabs(months) {
-      const tabs = document.getElementById('month-tabs');
-      tabs.innerHTML = months.map(m => 
+      document.getElementById('month-tabs').innerHTML = months.map(m => 
         `<button onclick="selectMonth('${m}')" class="px-3 py-1 rounded text-sm font-medium ${m === currentMonth ? 'bg-amber-500 text-white' : 'bg-gray-700 text-gray-300'}">${m}</button>`
       ).join('');
     }
 
-    function selectMonth(month) {
-      currentMonth = month;
-      showJobsForMonth(month);
-    }
+    function selectMonth(month) { currentMonth = month; showJobsForMonth(month); }
 
     function showJobsForMonth(month) {
       currentJobs = allJobs[month] || [];
       const list = document.getElementById('jobs-list');
-      
       if (currentJobs.length === 0) {
         list.innerHTML = '<p class="text-gray-500 text-sm italic">No jobs in this month</p>';
         return;
       }
-
       list.innerHTML = currentJobs.map((job, idx) => `
         <div onclick="showJobDetail(${idx})" class="bg-gray-800 p-3 rounded-lg cursor-pointer hover:bg-gray-700">
           <div class="text-white font-medium">${job.owner || 'Unknown'}</div>
@@ -187,13 +161,10 @@
     }
 
     function showJobDetail(index) {
-      currentJobIndex = index;
-      currentPage = 0;
+      currentJobIndex = index; currentPage = 0;
       const job = currentJobs[index];
-      
       document.getElementById('detail-owner').textContent = job.owner || 'Unknown';
       document.getElementById('detail-address').textContent = job.address || '';
-      
       showDetailPage();
       document.getElementById('jobs-view').classList.add('hidden');
       document.getElementById('detail-view').classList.remove('hidden');
@@ -202,7 +173,6 @@
     function showDetailPage() {
       const job = currentJobs[currentJobIndex];
       const page = fieldPages[currentPage];
-      
       const fieldsDiv = document.getElementById('detail-fields');
       fieldsDiv.innerHTML = `
         <h4 class="text-amber-500 font-semibold text-center mb-4">${page.title}</h4>
@@ -221,41 +191,64 @@
     function saveField(field, value) {
       const job = currentJobs[currentJobIndex];
       fetch(`${API_URL}/api/jobs/update`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ month: currentMonth, row: job.row, field, value })
-      }).then(r => r.json()).then(data => {
-        if (data.success) {
-          job[field] = value;
-          showStatus('Saved!');
-        }
-      });
+      }).then(r => r.json()).then(data => { if (data.success) { job[field] = value; showStatus('Saved!'); } });
     }
 
-    function prevPage() {
-      if (currentPage > 0) { currentPage--; showDetailPage(); }
-    }
+    function prevPage() { if (currentPage > 0) { currentPage--; showDetailPage(); } }
+    function nextPage() { if (currentPage < fieldPages.length - 1) { currentPage++; showDetailPage(); } }
 
-    function nextPage() {
-      if (currentPage < fieldPages.length - 1) { currentPage++; showDetailPage(); }
-    }
+    function startUpload() { document.getElementById('file-input').click(); }
 
-    function startUpload() {
-      document.getElementById('file-input').click();
+    // Convert PDF to image in browser
+    async function convertPdfToImage(file) {
+      showProgress(true, 'Converting PDF to image...');
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const page = await pdf.getPage(1);
+      const viewport = page.getViewport({ scale: 2.0 });
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext('2d');
+      
+      await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+      return canvas.toDataURL('image/jpeg', 0.9).split(',')[1];
     }
 
     async function handleFileSelect(event) {
       const file = event.target.files[0];
       if (!file) return;
-
-      if (!file.name.toLowerCase().endsWith('.pdf')) {
-        showStatus('Please select a PDF file', true);
-        return;
-      }
-
-      showProgress(true, 'Uploading and processing contract...');
+      
+      const fileExt = file.name.toLowerCase().split('.').pop();
+      
+      showProgress(true, 'Uploading and processing...');
+      
       const formData = new FormData();
-      formData.append('contract', file);
+      
+      if (fileExt === 'pdf') {
+        showProgress(true, 'Converting PDF to image...');
+        try {
+          const imageBase64 = await convertPdfToImage(file);
+          formData.append('image', imageBase64);
+          formData.append('type', 'converted');
+        } catch (e) {
+          showStatus('Could not read PDF. Please upload as JPG/PNG.', true);
+          showProgress(false);
+          return;
+        }
+      } else {
+        // For images, convert to base64
+        const reader = new FileReader();
+        const imageBase64 = await new Promise((resolve) => {
+          reader.onload = () => resolve(reader.result.split(',')[1]);
+          reader.readAsDataURL(file);
+        });
+        formData.append('image', imageBase64);
+        formData.append('type', file.type);
+      }
 
       try {
         const response = await fetch(`${API_URL}/api/upload`, { method: 'POST', body: formData });
@@ -264,10 +257,9 @@
           showStatus(`Contract added to ${result.month}!`);
           addToRecentList(file.name, result.month);
         } else {
-          showStatus(result.error || 'Error', true);
+          showStatus(result.error || 'Error uploading', true);
         }
       } catch (err) { showStatus('Error uploading', true); }
-
       showProgress(false);
       event.target.value = '';
     }

@@ -14,9 +14,8 @@ const sheets = google.sheets({ version: 'v4', auth });
 const SPREADSHEET_ID = '1YmEsM3AvtIbNqto8DoYLMO48tH13UY23niGvRz5vOtU';
 
 const app = express();
-const upload = multer({ dest: path.join(__dirname, 'uploads') });
+app.use(express.json({ limit: '10mb' }));
 app.use(express.static('public'));
-app.use(express.json());
 
 app.get('/api/jobs', async (req, res) => {
   const result = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
@@ -37,22 +36,25 @@ app.post('/api/jobs/update', async (req, res) => {
   res.json({ success: true });
 });
 
-// Try to extract text from PDF
-async function extractTextFromPDF(pdfPath) {
-  try {
-    const { default: pdf } = await import('pdf-parse');
-    const data = await pdf(fs.readFileSync(pdfPath));
-    return data.text || '';
-  } catch (e) { return ''; }
-}
-
-// Parse extracted text with AI
-async function parseWithAI(text) {
+// Send image to AI for extraction
+async function extractFromImage(base64Image, mimeType) {
   const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) return '';
+  
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}`, 'HTTP-Referer': 'https://yh-hammer.onrender.com', 'X-Title': 'Yellow Hammer' },
-    body: JSON.stringify({ model: 'anthropic/claude-3-haiku', messages: [{ role: 'user', content: `Extract from contract: Owner, Address, Phone, Email, Total Cost, Date, Shingle Manufacturer, Shingle Type. Format: Field: Value\n\n${text.substring(0, 10000)}` }], max_tokens: 1500 })
+    body: JSON.stringify({
+      model: 'anthropic/claude-3-haiku',
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'text', text: 'Extract from this contract: Owner, Address, Phone, Email, Total Cost, Contract Date, Shingle Manufacturer, Shingle Type. Format: Field: Value' },
+          { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64Image}` } }
+        ]
+      }],
+      max_tokens: 1500
+    })
   });
   const data = await response.json();
   return data.choices[0]?.message?.content || '';
@@ -61,7 +63,18 @@ async function parseWithAI(text) {
 function parseOCR(text) {
   const amounts = text.match(/\$[\d,]+\.?\d{0,2}/g) || [];
   const field = (name) => { const m = text.match(new RegExp(`(?:Field:\\s*)?${name}:?\\s*([^\\n]+)`, 'i')); return m ? m[1].trim() : ''; };
-  return { owner: field('Owner') || 'Unknown', address: field('Address') || '', phone: field('Phone') || '', email: field('Email') || '', totalCost: amounts[0]?.replace(/[$,]/g, '') || '0', balanceDue: amounts[0]?.replace(/[$,]/g, '') || '0', tooP: amounts[1]?.replace(/[$,]/g, '') || field('Deductible') || '0', date: field('Date') || field('Contract Date') || '', manufacturer: field('Manufacturer') || field('Shingle') || '', shingleType: field('Type') || field('Shingle Type') || '' };
+  return { 
+    owner: field('Owner') || 'Unknown', 
+    address: field('Address') || '', 
+    phone: field('Phone') || '', 
+    email: field('Email') || '', 
+    totalCost: amounts[0]?.replace(/[$,]/g, '') || '0', 
+    balanceDue: amounts[0]?.replace(/[$,]/g, '') || '0', 
+    tooP: amounts[1]?.replace(/[$,]/g, '') || field('Deductible') || '0', 
+    date: field('Date') || field('Contract Date') || '', 
+    manufacturer: field('Manufacturer') || field('Shingle Manufacturer') || '', 
+    shingleType: field('Type') || field('Shingle Type') || '' 
+  };
 }
 
 function getMonth(dateStr) {
@@ -72,55 +85,43 @@ function getMonth(dateStr) {
   return 'April';
 }
 
-app.post('/api/upload', upload.single('contract'), async (req, res) => {
+app.post('/api/upload', async (req, res) => {
   try {
-    const newPath = path.join(__dirname, 'uploads', `${Date.now()}_${req.file.originalname}`);
-    fs.renameSync(req.file.path, newPath);
-    const fileExt = path.extname(req.file.originalname).toLowerCase();
-    console.log('Processing:', req.file.originalname);
+    const { image, type } = req.body;
+    if (!image) return res.status(400).json({ error: 'No image provided' });
     
-    let text = '';
+    console.log('Processing image, type:', type);
+    showProgress(true, 'Extracting contract data...');
     
-    // For PDFs - extract text
-    if (fileExt === '.pdf') {
-      text = await extractTextFromPDF(newPath);
-      console.log('PDF text length:', text.length);
-    } 
-    // For images - use Tesseract
-    else if (['.jpg', '.jpeg', '.png'].includes(fileExt)) {
-      try {
-        const Tesseract = await import('tesseract.js');
-        const result = await Tesseract.recognize(newPath, 'eng');
-        text = result.data.text || '';
-        console.log('OCR text length:', text.length);
-      } catch (e) { console.log('OCR failed:', e.message); }
-    }
+    const mimeType = type || 'image/jpeg';
+    const aiResult = await extractFromImage(image, mimeType);
+    console.log('AI result:', aiResult.substring(0, 200));
     
-    if (!text || text.length < 30) {
-      return res.status(400).json({ 
-        error: 'Could not read this file. For scanned PDFs, please take a photo of the contract and upload as JPG/PNG instead.',
-        tip: 'Take a photo of the contract with your phone and upload that.'
-      });
-    }
-    
-    const aiResult = await parseWithAI(text);
-    const data = parseOCR(aiResult || text);
+    const data = parseOCR(aiResult);
     console.log('Parsed:', JSON.stringify(data));
     
     if (!data.owner || data.owner === 'Unknown' || data.owner.length < 3) {
-      return res.status(400).json({ error: 'Could not extract valid data from this file. Please use Edit Records.' });
+      return res.status(400).json({ error: 'Could not extract valid data. Please enter manually.' });
     }
     
     const month = getMonth(data.date);
     const rowData = [data.address, '', data.date, '', '', data.owner, data.totalCost, '$0', '$0', '$0', data.balanceDue, data.tooP, '', '', 'Check', data.phone, data.email, '', 'Black', 'Black', data.manufacturer, data.shingleType, '', '', ''];
-    const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A:A` });
-    await sheets.spreadsheets.values.update({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A${(r.data.values?.length || 0) + 1}:Z${(r.data.values?.length || 0) + 1}`, valueInputOption: 'USER_ENTERED', requestBody: { values: [rowData] } });
     
+    const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A:A` });
+    const nextRow = (r.data.values?.length || 0) + 1;
+    
+    await sheets.spreadsheets.values.update({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A${nextRow}:Z${nextRow}`, valueInputOption: 'USER_ENTERED', requestBody: { values: [rowData] } });
+    
+    console.log(`Saved to ${month} row ${nextRow}`);
     res.json({ success: true, month, owner: data.owner });
   } catch (err) {
     console.error('Error:', err);
     res.status(500).json({ error: err.message });
   }
 });
+
+function showProgress(show, text = 'Processing...') {
+  // Server-side logging
+}
 
 app.listen(process.env.PORT || 3000, () => console.log('App running'));
