@@ -146,37 +146,34 @@ async function extractWithAI(text) {
 function parseOCR(text) {
   const amounts = text.match(/\$[\d,]+\.?\d{0,2}/g) || [];
   
-  // Extract owner
-  const ownerMatch = text.match(/Owner:?\s*([A-Za-z\s]+)/i) || text.match(/Property Owner:?\s*([A-Za-z\s]+)/i);
-  const owner = ownerMatch ? ownerMatch[1].trim() : 'Unknown';
+  // Handle "Field: Value" format from AI
+  const fieldMatch = (fieldName) => {
+    // Try "Field: Value" format first
+    const m = text.match(new RegExp(`Field:?\\s*${fieldName}:?\\s*([^\\n]+)`, 'i'));
+    if (m) return m[1].trim();
+    // Try plain "Value:" format
+    const m2 = text.match(new RegExp(`${fieldName}:?\\s*([^\\n]+)`, 'i'));
+    if (m2) return m2[1].trim();
+    return '';
+  };
   
-  // Extract address
-  const addrMatch = text.match(/Address:?\s*([^\n]+)/i);
-  const address = addrMatch ? addrMatch[1].trim() : '';
+  const owner = fieldMatch('Owner') || 'Unknown';
+  const address = fieldMatch('Address') || fieldMatch('Property') || '';
+  const phone = fieldMatch('Phone') || '';
+  const email = fieldMatch('Email') || '';
+  const manufacturer = fieldMatch('Shingle Manufacturer') || fieldMatch('Manufacturer') || '';
+  const shingleType = fieldMatch('Shingle Type') || fieldMatch('Type') || '';
+  const deductible = fieldMatch('Insurance Deductible') || fieldMatch('Deductible') || '0';
   
-  // Extract phone
-  const phoneMatch = text.match(/Phone:?\s*([\d\-\(\)\s]+)/i);
-  const phone = phoneMatch ? phoneMatch[1].trim() : '';
+  // Extract dates - look for dates in the text
+  const dateMatch = text.match(/(?:Contract Date|Date):?\s*([A-Za-z0-9\s,]+)/i) || text.match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/);
+  const date = dateMatch ? dateMatch[1].trim() : '';
   
-  // Extract email
-  const emailMatch = text.match(/Email:?\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i);
-  const email = emailMatch ? emailMatch[1].trim() : '';
+  // Get first dollar amount for total cost
+  const totalCost = amounts[0] ? amounts[0].replace('$','').replace(/,/g,'') : '0';
   
-  // Extract cost
-  const costMatch = text.match(/Total Cost:?\s*\$?([\d,]+)/i);
-  const totalCost = costMatch ? costMatch[1].replace(/,/g, '') : '0';
-  
-  // Extract date
-  const dateMatch = text.match(/Contract Date:?\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i);
-  const date = dateMatch ? dateMatch[1] : '';
-  
-  // Extract shingle
-  const shingleMatch = text.match(/Shingle Manufacturer:?\s*([A-Za-z]+)/i);
-  const manufacturer = shingleMatch ? shingleMatch[1].trim() : '';
-  
-  // Extract deductible
-  const deductibleMatch = text.match(/Deductible:?\s*\$?([\d,]+)/i);
-  const tooP = deductibleMatch ? deductibleMatch[1].replace(/,/g, '') : '0';
+  // Second amount is usually deductible
+  const tooP = amounts[1] ? amounts[1].replace('$','').replace(/,/g,'') : deductible;
 
   return {
     owner, address, phone, email,
@@ -188,19 +185,32 @@ function parseOCR(text) {
     dripEdge: 'Black',
     ventilation: 'Black',
     manufacturer,
-    shingleType: '',
+    shingleType,
     shingleColor: ''
   };
 }
 
 function getMonth(dateStr) {
   if (!dateStr) return 'April';
+  
+  // Handle "Month DD, YYYY" format
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  for (let i = 0; i < monthNames.length; i++) {
+    if (dateStr.toLowerCase().includes(monthNames[i].toLowerCase())) {
+      return monthNames[i];
+    }
+  }
+  
+  // Handle MM/DD/YYYY format
   const parts = dateStr.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
-  if (!parts) return 'April';
-  const m = parseInt(parts[1]);
-  if (isNaN(m) || m < 1 || m > 12) return 'April';
-  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  return months[m - 1];
+  if (parts) {
+    const m = parseInt(parts[1]);
+    if (!isNaN(m) && m >= 1 && m <= 12) {
+      return monthNames[m - 1];
+    }
+  }
+  
+  return 'April';
 }
 
 app.post('/api/upload', upload.single('contract'), async (req, res) => {
