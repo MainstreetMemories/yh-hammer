@@ -27,16 +27,6 @@ const upload = multer({ dest: UPLOAD_DIR });
 app.use(express.static('public'));
 app.use(express.json());
 
-async function getJobsByMonth(month) {
-  try {
-    const result = await sheets.spreadsheets.values.get({
-      spreadsheetId: SPREADSHEET_ID,
-      range: `${month}!A4:Z`
-    });
-    return result.data.values || [];
-  } catch (e) { return []; }
-}
-
 async function getAllMonths() {
   const result = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
   return result.data.sheets.map(s => s.properties.title).filter(t => t !== 'Customer Information');
@@ -47,126 +37,64 @@ app.get('/api/jobs', async (req, res) => {
     const months = await getAllMonths();
     const allJobs = {};
     for (const month of months) {
-      const jobs = await getJobsByMonth(month);
+      const result = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A4:Z` });
+      const jobs = result.data.values || [];
       allJobs[month] = jobs.map((job, idx) => ({
         row: idx + 4, address: job[0] || '', owner: job[5] || '', phone: job[15] || '', email: job[16] || '',
-        contractDate: job[2] || '', estimateDate: job[3] || '', installDate: job[4] || '',
-        totalCost: job[6] || '', downPayment: job[7] || '', balanceDue: job[10] || '', tooP: job[11] || '',
-        pmntMethod: job[14] || '', manufacturer: job[21] || '', shingleType: job[22] || '', shingleColor: job[23] || '',
-        dripEdge: job[19] || '', ventilation: job[20] || '', notes: job[25] || ''
+        contractDate: job[2] || '', totalCost: job[6] || '', balanceDue: job[10] || '', tooP: job[11] || '',
+        manufacturer: job[21] || '', shingleType: job[22] || '', notes: job[25] || ''
       }));
     }
     res.json(allJobs);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/jobs/update', async (req, res) => {
-  try {
-    const { month, row, field, value } = req.body;
-    const fieldMap = {
-      address: 'A', contractDate: 'C', estimateDate: 'D', installDate: 'E', owner: 'F',
-      totalCost: 'G', downPayment: 'H', balanceDue: 'K', tooP: 'L', pmntMethod: 'O',
-      phone: 'P', email: 'Q', datePaid: 'R', checkNum: 'S', amountPaid: 'T',
-      dripEdge: 'U', ventilation: 'V', manufacturer: 'W', shingleType: 'X', shingleColor: 'Y', notes: 'Z'
-    };
-    const col = fieldMap[field];
-    if (!col) return res.status(400).json({ error: 'Invalid field' });
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: SPREADSHEET_ID, range: `${month}!${col}${row}`,
-      valueInputOption: 'USER_ENTERED', requestBody: { values: [[value]] }
-    });
-    res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Convert PDF to images and extract with AI
-async function extractFromPDF(pdfPath) {
+app.post('/api/jobs/update', async (req, res) => {
+  const { month, row, field, value } = req.body;
+  const fieldMap = {
+    address: 'A', contractDate: 'C', owner: 'F', totalCost: 'G', balanceDue: 'K', tooP: 'L',
+    pmntMethod: 'O', phone: 'P', email: 'Q', manufacturer: 'W', shingleType: 'X', notes: 'Z'
+  };
+  if (!fieldMap[field]) return res.status(400).json({ error: 'Invalid field' });
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SPREADSHEET_ID, range: `${month}!${fieldMap[field]}${row}`,
+    valueInputOption: 'USER_ENTERED', requestBody: { values: [[value]] }
+  });
+  res.json({ success: true });
+});
+
+// Simple text extraction from PDF
+async function extractTextFromPDF(pdfPath) {
   try {
-    // Dynamic import for pdf.js
-    const pdfjs = await import('pdfjs-dist');
-    
-    // Set worker
-    pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
-    
-    const pdfBuffer = fs.readFileSync(pdfPath);
-    const pdfData = new Uint8Array(pdfBuffer);
-    
-    const pdfDoc = await pdfjs.getDocument({ data: pdfData }).promise;
-    console.log(`PDF has ${pdfDoc.numPages} pages`);
-    
-    let allText = '';
-    
-    // Convert each page to image
-    for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
-      const page = await pdfDoc.getPage(pageNum);
-      const viewport = page.getViewport({ scale: 2.0 }); // Higher scale = better quality
-      
-      // Create canvas
-      const canvas = new (await import('canvas')).createCanvas(viewport.width, viewport.height);
-      const ctx = canvas.getContext('2d');
-      
-      await page.render({
-        canvasContext: ctx,
-        viewport: viewport
-      }).promise;
-      
-      // Convert to base64
-      const imageBuffer = canvas.toBuffer('image/png');
-      const base64 = imageBuffer.toString('base64');
-      
-      console.log(`Converting page ${pageNum} to image...`);
-      
-      // Send to AI
-      const apiKey = process.env.OPENROUTER_API_KEY;
-      if (!apiKey) {
-        return 'Owner: Unknown';
-      }
-      
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-          'HTTP-Referer': 'https://yh-hammer.onrender.com',
-          'X-Title': 'Yellow Hammer Contract App'
-        },
-        body: JSON.stringify({
-          model: 'anthropic/claude-3-haiku',
-          messages: [{
-            role: 'user',
-            content: [
-              { type: 'text', text: 'Extract these fields from this contract image. Return each on its own line as "Field: Value": Owner, Address, Phone, Email, Total Cost, Contract Date, Shingle Manufacturer, Shingle Type, Insurance Deductible' },
-              { type: 'image_url', image_url: { url: `data:image/png;base64,${base64}` } }
-            ]
-          }],
-          max_tokens: 1500
-        })
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        const extracted = data.choices[0]?.message?.content || '';
-        allText += extracted + '\n';
-      }
-    }
-    
-    return allText;
+    const { default: pdf } = await import('pdf-parse');
+    const dataBuffer = fs.readFileSync(pdfPath);
+    const data = await pdf(dataBuffer);
+    return data.text || '';
   } catch (e) {
-    console.log('PDF extraction error:', e.message);
+    console.log('PDF parse error:', e.message);
     return '';
   }
 }
 
-// Extract from image (JPG, PNG)
-async function extractFromImage(imagePath, fileExt) {
-  const imageBuffer = fs.readFileSync(imagePath);
-  const base64 = imageBuffer.toString('base64');
-  const mimeType = fileExt === '.png' ? 'image/png' : 'image/jpeg';
-  
+// Send to AI for extraction
+async function extractWithAI(content, contentType = 'text/plain') {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) return 'Owner: Unknown';
+  
+  let contentArray;
+  
+  if (contentType.startsWith('image/')) {
+    // It's an image - send directly to AI
+    contentArray = [
+      { type: 'text', text: 'Extract these fields from this contract. Return each on its own line as "Field: Value": Owner, Address, Phone, Email, Total Cost, Contract Date, Shingle Manufacturer, Shingle Type, Insurance Deductible' },
+      { type: 'image_url', image_url: { url: `data:${contentType};base64,${content}` } }
+    ];
+  } else {
+    // It's text - send to AI with prompt
+    contentArray = [
+      { type: 'text', text: `Extract these fields from this contract. Return each on its own line as "Field: Value": Owner, Address, Phone, Email, Total Cost, Contract Date, Shingle Manufacturer, Shingle Type, Insurance Deductible\n\nContract text:\n${content.substring(0, 10000)}` }
+    ];
+  }
   
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
@@ -178,23 +106,12 @@ async function extractFromImage(imagePath, fileExt) {
     },
     body: JSON.stringify({
       model: 'anthropic/claude-3-haiku',
-      messages: [{
-        role: 'user',
-        content: [
-          { type: 'text', text: 'Extract these fields from this contract image. Return each on its own line as "Field: Value": Owner, Address, Phone, Email, Total Cost, Contract Date, Shingle Manufacturer, Shingle Type, Insurance Deductible' },
-          { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}` } }
-        ]
-      }],
+      messages: [{ role: 'user', content: contentArray }],
       max_tokens: 1500
     })
   });
   
-  if (!response.ok) {
-    const err = await response.text();
-    console.log('API Error:', err);
-    return '';
-  }
-  
+  if (!response.ok) return '';
   const data = await response.json();
   return data.choices[0]?.message?.content || '';
 }
@@ -202,57 +119,45 @@ async function extractFromImage(imagePath, fileExt) {
 function parseOCR(text) {
   const amounts = text.match(/\$[\d,]+\.?\d{0,2}/g) || [];
   
-  const fieldMatch = (fieldName) => {
-    const m = text.match(new RegExp(`Field:?\\s*${fieldName}:?\\s*([^\\n]+)`, 'i'));
-    if (m) return m[1].trim();
-    const m2 = text.match(new RegExp(`${fieldName}:?\\s*([^\\n]+)`, 'i'));
-    if (m2) return m2[1].trim();
+  const fieldMatch = (name) => {
+    const patterns = [
+      new RegExp(`Field:?\\s*${name}:?\\s*([^\\n]+)`, 'i'),
+      new RegExp(`${name}:?\\s*([^\\n]+)`, 'i')
+    ];
+    for (const p of patterns) {
+      const m = text.match(p);
+      if (m) return m[1].trim();
+    }
     return '';
   };
   
-  const owner = fieldMatch('Owner') || 'Unknown';
-  const address = fieldMatch('Address') || fieldMatch('Property') || '';
-  const phone = fieldMatch('Phone') || '';
-  const email = fieldMatch('Email') || '';
-  const manufacturer = fieldMatch('Shingle Manufacturer') || fieldMatch('Manufacturer') || '';
-  const shingleType = fieldMatch('Shingle Type') || fieldMatch('Type') || '';
-  const deductible = fieldMatch('Insurance Deductible') || fieldMatch('Deductible') || '0';
-  
-  const dateMatch = text.match(/(?:Contract Date|Date):?\s*([A-Za-z0-9\s,]+)/i) || text.match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/);
-  const date = dateMatch ? dateMatch[1].trim() : '';
-  
-  const totalCost = amounts[0] ? amounts[0].replace('$','').replace(/,/g,'') : '0';
-  const tooP = amounts[1] ? amounts[1].replace('$','').replace(/,/g,'') : deductible;
-  
   return {
-    owner, address, phone, email,
-    totalCost,
-    balanceDue: totalCost,
-    tooP,
-    date,
+    owner: fieldMatch('Owner') || 'Unknown',
+    address: fieldMatch('Address') || fieldMatch('Property') || '',
+    phone: fieldMatch('Phone') || '',
+    email: fieldMatch('Email') || '',
+    totalCost: amounts[0] ? amounts[0].replace(/[$,]/g, '') : '0',
+    balanceDue: amounts[0] ? amounts[0].replace(/[$,]/g, '') : '0',
+    tooP: amounts[1] ? amounts[1].replace(/[$,]/g, '') : fieldMatch('Deductible') || '0',
+    date: fieldMatch('Date') || fieldMatch('Contract Date') || '',
     pmntMethod: 'Check',
     dripEdge: 'Black',
     ventilation: 'Black',
-    manufacturer,
-    shingleType,
-    shingleColor: ''
+    manufacturer: fieldMatch('Manufacturer') || fieldMatch('Shingle Manufacturer') || '',
+    shingleType: fieldMatch('Type') || fieldMatch('Shingle Type') || ''
   };
 }
 
 function getMonth(dateStr) {
   if (!dateStr) return 'April';
-  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  for (let i = 0; i < monthNames.length; i++) {
-    if (dateStr.toLowerCase().includes(monthNames[i].toLowerCase())) {
-      return monthNames[i];
-    }
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  for (let i = 0; i < months.length; i++) {
+    if (dateStr.toLowerCase().includes(months[i].toLowerCase())) return months[i];
   }
-  const parts = dateStr.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
-  if (parts) {
-    const m = parseInt(parts[1]);
-    if (!isNaN(m) && m >= 1 && m <= 12) {
-      return monthNames[m - 1];
-    }
+  const m = dateStr.match(/(\d{1,2})[\/\-]/);
+  if (m) {
+    const monthNum = parseInt(m[1]);
+    if (monthNum >= 1 && monthNum <= 12) return months[monthNum - 1];
   }
   return 'April';
 }
@@ -262,58 +167,55 @@ app.post('/api/upload', upload.single('contract'), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
     
     const tempPath = req.file.path;
-    const newName = `${Date.now()}_${req.file.originalname}`;
-    const newPath = path.join(UPLOAD_DIR, newName);
+    const newPath = path.join(UPLOAD_DIR, `${Date.now()}_${req.file.originalname}`);
     fs.renameSync(tempPath, newPath);
     
-    console.log('Processing upload:', newName);
     const fileExt = path.extname(req.file.originalname).toLowerCase();
+    console.log('Processing file:', req.file.originalname, 'type:', fileExt);
     
     let aiText = '';
     
+    // Handle based on file type
     if (fileExt === '.pdf') {
-      console.log('Processing PDF...');
-      // Try to convert PDF to image and extract
-      try {
-        aiText = await extractFromPDF(newPath);
-        console.log('PDF extracted:', aiText ? aiText.substring(0, 200) : 'empty');
-      } catch (pdfErr) {
-        console.log('PDF extraction failed:', pdfErr.message);
-        // Fallback - try simple text extraction
-        try {
-          const { pdf } = await import('pdf-parse');
-          const dataBuffer = fs.readFileSync(newPath);
-          const data = await pdf(dataBuffer);
-          aiText = data.text;
-          console.log('Fallback text extraction:', aiText.substring(0, 200));
-        } catch (e) {
-          console.log('Text extraction also failed');
-        }
+      // Try PDF text extraction
+      console.log('Extracting text from PDF...');
+      const pdfText = await extractTextFromPDF(newPath);
+      console.log('PDF text length:', pdfText.length);
+      
+      if (pdfText && pdfText.length > 50) {
+        // Got text - use AI to parse
+        console.log('Sending to AI...');
+        aiText = await extractWithAI(pdfText, 'text/plain');
+      } else {
+        // Couldn't extract text - need to ask for image
+        return res.status(400).json({ 
+          error: 'This PDF appears to be a scanned image. Please take a photo of the contract and upload as JPG/PNG instead.',
+          needsImage: true
+        });
       }
     } else if (['.jpg', '.jpeg', '.png'].includes(fileExt)) {
+      // Handle image directly
       console.log('Processing image...');
-      aiText = await extractFromImage(newPath, fileExt);
-      console.log('Image extracted:', aiText ? aiText.substring(0, 200) : 'empty');
-    } else {
-      return res.status(400).json({ error: 'Unsupported file type. Please upload PDF or JPG/PNG.' });
+      const imageBuffer = fs.readFileSync(newPath);
+      const base64 = imageBuffer.toString('base64');
+      const mimeType = fileExt === '.png' ? 'image/png' : 'image/jpeg';
+      aiText = await extractWithAI(base64, mimeType);
     }
     
-    if (!aiText || aiText.length < 10) {
-      return res.status(400).json({ error: 'Could not extract text from file. Please use Edit Records to enter manually.' });
-    }
+    console.log('AI result:', aiText ? aiText.substring(0, 200) : 'empty');
     
     const data = parseOCR(aiText);
-    console.log('Parsed data:', JSON.stringify(data));
+    console.log('Parsed:', JSON.stringify(data));
     
     if (!data.owner || data.owner === 'Unknown' || data.owner.length < 3) {
-      return res.status(400).json({ error: 'Could not extract valid contract data. Please enter manually using Edit Records.' });
+      return res.status(400).json({ error: 'Could not extract valid data. Please use Edit Records to enter manually.' });
     }
     
     const month = getMonth(data.date);
     const rowData = [
       data.address, '', data.date, '', '', data.owner, data.totalCost, '$0', '$0', '$0', data.balanceDue, data.tooP,
       '', '', data.pmntMethod, data.phone, data.email, '', data.dripEdge, data.ventilation,
-      data.manufacturer, data.shingleType, data.shingleColor, '', ''
+      data.manufacturer, data.shingleType, '', '', ''
     ];
     
     const result = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A:A` });
@@ -324,18 +226,13 @@ app.post('/api/upload', upload.single('contract'), async (req, res) => {
       valueInputOption: 'USER_ENTERED', requestBody: { values: [rowData] }
     });
     
-    console.log(`Added to ${month} row ${nextRow}`);
-    res.json({ success: true, month, owner: data.owner, row: nextRow });
+    console.log(`Saved to ${month} row ${nextRow}`);
+    res.json({ success: true, month, owner: data.owner });
   } catch (err) {
     console.error('Error:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-app.get('/api/uploads', (req, res) => {
-  const files = fs.readdirSync(UPLOAD_DIR).filter(f => f.endsWith('.pdf') || f.endsWith('.jpg') || f.endsWith('.png'));
-  res.json({ files });
-});
-
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`YH Contract App running on port ${PORT}`));
+app.listen(PORT, () => console.log(`App running on port ${PORT}`));
