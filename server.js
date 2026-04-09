@@ -105,7 +105,7 @@ async function extractWithAI(pdfPath) {
         'X-Title': 'Yellow Hammer Contract App'
       },
       body: JSON.stringify({
-        model: 'anthropic/claude-3-haiku-20240307',
+        model: 'anthropic/claude-3-haiku',
         messages: [{
           role: 'user',
           content: [
