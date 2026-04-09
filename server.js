@@ -12,7 +12,25 @@ const sheets = google.sheets({ version: 'v4', auth });
 const SPREADSHEET_ID = '1YmEsM3AvtIbNqto8DoYLMO48tH13UY23niGvRz5vOtU';
 
 const app = express();
-app.use(express.json({ limit: '15mb' }));
+
+// CORS headers
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') return res.sendStatus(200);
+  next();
+});
+
+app.use(express.json({ limit: '15mb', strict: false }));
+
+// Debug - log raw body
+app.use((req, res, next) => {
+  if (req.path === '/api/upload') {
+    console.log('Headers:', req.headers['content-type']);
+  }
+  next();
+});
 app.use(express.static('public'));
 
 app.get('/api/jobs', async (req, res) => {
@@ -87,9 +105,12 @@ function getMonth(dateStr) {
 
 app.post('/api/upload', async (req, res) => {
   console.log('=== UPLOAD ===');
+  console.log('Body:', JSON.stringify(req.body).substring(0, 300));
+  console.log('Body type:', typeof req.body);
   console.log('Body keys:', Object.keys(req.body));
+  console.log('Content-Type:', req.get('content-type'));
   
-  const { image, mimeType } = req.body;
+  let { image, mimeType } = req.body;
   
   if (!image) {
     console.log('ERROR: No image received');
