@@ -263,6 +263,12 @@ except:
     const month = getMonth(data.date);
     console.log('Month:', month);
     
+    // Validate we have real data before saving
+    if (!data.owner || data.owner === 'Unknown') {
+      console.log('No valid data extracted - not saving to spreadsheet');
+      return res.json({ error: 'Could not extract contract data. Please enter manually or try a different PDF.' });
+    }
+    
     const rowData = [
       data.address, '', data.date, '', '', data.owner, data.totalCost, '$0', '$0', '$0', data.balanceDue, data.tooP,
       '', '', data.pmntMethod, data.phone, data.email, '', data.dripEdge, data.ventilation,
