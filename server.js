@@ -4,8 +4,8 @@ import fs from 'fs';
 import { google } from 'googleapis';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { execSync } from 'child_process';
 import fetch from 'node-fetch';
+import { execSync } from 'child_process';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -82,20 +82,35 @@ app.post('/api/jobs/update', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// AI-powered OCR with better error handling
-async function extractWithAI(pdfPath) {
+// Simple text extraction from PDF
+function extractTextFromPDF(pdfPath) {
   try {
-    const pdfBuffer = fs.readFileSync(pdfPath);
-    const base64 = pdfBuffer.toString('base64');
-    const apiKey = process.env.OPENROUTER_API_KEY;
-    
-    console.log('API Key exists:', !!apiKey);
-    
-    if (!apiKey) {
-      console.log('No API key found, using fallback');
-      return 'Contract Date: 03/18/26\nOwner: Test Owner\nAddress: 123 Test St\nTotal Cost: $10,000';
-    }
+    // Use execSync to run python with pdf parser
+    const result = execSync(`python3 -c "
+import sys
+try:
+    import pdfplumber
+    with pdfplumber.open('${pdfPath}') as pdf:
+        text = ''
+        for page in pdf.pages:
+            text += page.extract_text() or ''
+        print(text)
+except Exception as e:
+    print('ERROR:' + str(e))
+"`, { encoding: 'utf-8', maxBuffer: 10*1024*1024 });
+    return result;
+  } catch (e) {
+    return '';
+  }
+}
 
+// AI-powered extraction using text (not image)
+async function extractWithAI(text) {
+  try {
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) return 'Owner: Unknown\nAddress: \nTotal Cost: $0';
+
+    // Send text instead of image
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -108,17 +123,12 @@ async function extractWithAI(pdfPath) {
         model: 'anthropic/claude-3-haiku',
         messages: [{
           role: 'user',
-          content: [
-            { type: 'text', text: 'Extract these fields from the contract: Owner name, Address, Phone, Email, Total Cost, Contract Date, Shingle Manufacturer/Type/Color. Return each on its own line as "Field: Value"' },
-            { type: 'image_url', image_url: { url: `data:application/pdf;base64,${base64}` } }
-          ]
+          content: `Extract these fields from this roofing contract. Return each on its own line as "Field: Value":\n- Owner (property owner name)\n- Address (full property address)\n- Phone\n- Email\n- Total Cost (dollar amount)\n- Contract Date\n- Shingle Manufacturer\n- Shingle Type\n- Insurance Deductible\n\nContract text:\n${text.substring(0, 8000)}`
         }],
         max_tokens: 1500
       })
     });
 
-    console.log('API Response status:', response.status);
-    
     if (!response.ok) {
       const errText = await response.text();
       console.log('API Error:', errText);
@@ -126,46 +136,58 @@ async function extractWithAI(pdfPath) {
     }
 
     const data = await response.json();
-    console.log('API Response data:', JSON.stringify(data).substring(0, 200));
-    
-    // Better error handling for response structure
-    if (!data || !data.choices || !data.choices[0]) {
-      console.log('Unexpected response structure');
-      return '';
-    }
-    
     return data.choices[0]?.message?.content || '';
   } catch (e) {
-    console.log('AI extraction error:', e.message, e.stack);
+    console.log('AI extraction error:', e.message);
     return '';
   }
 }
 
 function parseOCR(text) {
   const amounts = text.match(/\$[\d,]+\.?\d{0,2}/g) || [];
-  let owner = '', addrMatch = '', phoneMatch = '', emailMatch = '', shingleMatch = '', dateMatch = '';
   
-  const namePatterns = [/Owner:?\s*([A-Z][a-z]+ [A-Z][a-z]+)/i, /Name:?\s*([A-Z][a-z]+ [A-Z][a-z]+)/i];
-  for (const p of namePatterns) { const m = text.match(p); if (m) { owner = m[1]; break; } }
-  addrMatch = text.match(/Address:?\s*([^\\n]+)/i) || text.match(/(\d+\s+[A-Za-z\s]+(?:Street|St|Ave|Rd|Dr|Ln))/i);
-  phoneMatch = text.match(/(\d{3}[-.\s]?\d{3}[-.\s]?\d{4})/);
-  emailMatch = text.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
-  shingleMatch = text.match(/(Tamko|Owens|Corning|Atlas)[^\\n]*/i);
-  dateMatch = text.match(/Contract[\\s-]?Date:?\s*(\\d{1,2}[\\/\\-]\\d{1,2}[\\/\\-]\\d{2,4})/i);
+  // Extract owner
+  const ownerMatch = text.match(/Owner:?\s*([A-Za-z\s]+)/i) || text.match(/Property Owner:?\s*([A-Za-z\s]+)/i);
+  const owner = ownerMatch ? ownerMatch[1].trim() : 'Unknown';
+  
+  // Extract address
+  const addrMatch = text.match(/Address:?\s*([^\n]+)/i);
+  const address = addrMatch ? addrMatch[1].trim() : '';
+  
+  // Extract phone
+  const phoneMatch = text.match(/Phone:?\s*([\d\-\(\)\s]+)/i);
+  const phone = phoneMatch ? phoneMatch[1].trim() : '';
+  
+  // Extract email
+  const emailMatch = text.match(/Email:?\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i);
+  const email = emailMatch ? emailMatch[1].trim() : '';
+  
+  // Extract cost
+  const costMatch = text.match(/Total Cost:?\s*\$?([\d,]+)/i);
+  const totalCost = costMatch ? costMatch[1].replace(/,/g, '') : '0';
+  
+  // Extract date
+  const dateMatch = text.match(/Contract Date:?\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i);
+  const date = dateMatch ? dateMatch[1] : '';
+  
+  // Extract shingle
+  const shingleMatch = text.match(/Shingle Manufacturer:?\s*([A-Za-z]+)/i);
+  const manufacturer = shingleMatch ? shingleMatch[1].trim() : '';
+  
+  // Extract deductible
+  const deductibleMatch = text.match(/Deductible:?\s*\$?([\d,]+)/i);
+  const tooP = deductibleMatch ? deductibleMatch[1].replace(/,/g, '') : '0';
 
   return {
-    owner: owner || 'Unknown',
-    address: addrMatch ? addrMatch[1].trim() : '',
-    phone: phoneMatch ? phoneMatch[1] : '',
-    email: emailMatch ? emailMatch[1] : '',
-    totalCost: amounts[0]?.replace('$','').replace(',','') || '0',
-    balanceDue: amounts[0]?.replace('$','').replace(',','') || '0',
-    tooP: amounts[1]?.replace('$','').replace(',','') || '0',
-    date: dateMatch ? dateMatch[1] : '',
+    owner, address, phone, email,
+    totalCost,
+    balanceDue: totalCost,
+    tooP,
+    date,
     pmntMethod: 'Check',
     dripEdge: 'Black',
     ventilation: 'Black',
-    manufacturer: shingleMatch ? shingleMatch[1].trim() : '',
+    manufacturer,
     shingleType: '',
     shingleColor: ''
   };
@@ -191,10 +213,41 @@ app.post('/api/upload', upload.single('contract'), async (req, res) => {
     fs.renameSync(tempPath, newPath);
     
     console.log('Processing upload:', newName);
-    const text = await extractWithAI(newPath);
-    console.log('Extracted text:', text ? text.substring(0, 200) : 'empty');
     
-    const data = parseOCR(text);
+    // Step 1: Extract text from PDF (works for text-based PDFs)
+    let pdfText = '';
+    try {
+      const result = execSync(`python3 -c "
+import sys
+try:
+    import pdfplumber
+    with pdfplumber.open('${newPath}') as pdf:
+        for page in pdf.pages:
+            t = page.extract_text()
+            if t:
+                print(t)
+except:
+    try:
+        import fitz
+        doc = fitz.open('${newPath}')
+        for page in doc:
+            print(page.get_text())
+    except:
+        print('')
+"`, { encoding: 'utf-8', maxBuffer: 10*1024*1024 });
+      pdfText = result;
+    } catch (e) {
+      console.log('Text extraction failed:', e.message);
+    }
+    
+    console.log('Extracted PDF text length:', pdfText.length);
+    
+    // Step 2: Use AI to parse the text
+    const aiText = await extractWithAI(pdfText);
+    console.log('AI Extracted:', aiText ? aiText.substring(0, 200) : 'empty');
+    
+    // Step 3: Parse into fields
+    const data = parseOCR(aiText || pdfText);
     console.log('Parsed data:', JSON.stringify(data));
     
     const month = getMonth(data.date);
@@ -203,7 +256,7 @@ app.post('/api/upload', upload.single('contract'), async (req, res) => {
     const rowData = [
       data.address, '', data.date, '', '', data.owner, data.totalCost, '$0', '$0', '$0', data.balanceDue, data.tooP,
       '', '', data.pmntMethod, data.phone, data.email, '', data.dripEdge, data.ventilation,
-      data.manufacturer, data.shingleType, data.shingleColor, '', data.notes || ''
+      data.manufacturer, data.shingleType, data.shingleColor, '', ''
     ];
     
     const result = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A:A` });
@@ -215,7 +268,7 @@ app.post('/api/upload', upload.single('contract'), async (req, res) => {
     });
     
     console.log(`Added to ${month} row ${nextRow}`);
-    res.json({ success: true, month, owner: data.owner, row: nextRow, extracted: text.substring(0, 100) });
+    res.json({ success: true, month, owner: data.owner, row: nextRow });
   } catch (err) {
     console.error('Error:', err);
     res.status(500).json({ error: err.message });
