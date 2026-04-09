@@ -91,7 +91,6 @@ app.post('/api/upload', async (req, res) => {
     if (!image) return res.status(400).json({ error: 'No image provided' });
     
     console.log('Processing image, type:', type);
-    showProgress(true, 'Extracting contract data...');
     
     const mimeType = type || 'image/jpeg';
     const aiResult = await extractFromImage(image, mimeType);
@@ -119,9 +118,5 @@ app.post('/api/upload', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
-function showProgress(show, text = 'Processing...') {
-  // Server-side logging
-}
 
 app.listen(process.env.PORT || 3000, () => console.log('App running'));

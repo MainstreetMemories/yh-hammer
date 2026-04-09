@@ -251,7 +251,11 @@
       }
 
       try {
-        const response = await fetch(`${API_URL}/api/upload`, { method: 'POST', body: formData });
+        const response = await fetch(`${API_URL}/api/upload`, { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: formData.get('image'), type: formData.get('type') })
+        });
         const result = await response.json();
         if (response.ok) {
           showStatus(`Contract added to ${result.month}!`);
