@@ -255,7 +255,7 @@ except:
     // Check if PDF has real text content
     if (pdfText.length < 10) {
       console.log('PDF text extraction failed - cannot read scanned PDF');
-      return res.json({ error: 'Cannot read this PDF. It may be a scanned image. Please use Edit Records to enter manually.' });
+      return res.status(400).json({ error: 'Cannot read this PDF. It may be a scanned image. Please use Edit Records to enter manually.' });
     }
     
     // Step 2: Use AI to parse the text
@@ -272,7 +272,7 @@ except:
     // Validate we have real data before saving
     if (!data.owner || data.owner === 'Unknown' || data.owner.length < 3) {
       console.log('No valid data extracted - not saving to spreadsheet');
-      return res.json({ error: 'Could not extract valid contract data. Please enter manually using Edit Records.' });
+      return res.status(400).json({ error: 'Could not extract valid contract data. Please enter manually using Edit Records.' });
     }
     
     const rowData = [
