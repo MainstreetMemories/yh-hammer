@@ -5,7 +5,6 @@ import { google } from 'googleapis';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fetch from 'node-fetch';
-import { execSync } from 'child_process';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -82,76 +81,130 @@ app.post('/api/jobs/update', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Simple text extraction from PDF
-function extractTextFromPDF(pdfPath) {
+// Convert PDF to images and extract with AI
+async function extractFromPDF(pdfPath) {
   try {
-    // Use execSync to run python with pdf parser
-    const result = execSync(`python3 -c "
-import sys
-try:
-    import pdfplumber
-    with pdfplumber.open('${pdfPath}') as pdf:
-        text = ''
-        for page in pdf.pages:
-            text += page.extract_text() or ''
-        print(text)
-except Exception as e:
-    print('ERROR:' + str(e))
-"`, { encoding: 'utf-8', maxBuffer: 10*1024*1024 });
-    return result;
+    // Dynamic import for pdf.js
+    const pdfjs = await import('pdfjs-dist');
+    
+    // Set worker
+    pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+    
+    const pdfBuffer = fs.readFileSync(pdfPath);
+    const pdfData = new Uint8Array(pdfBuffer);
+    
+    const pdfDoc = await pdfjs.getDocument({ data: pdfData }).promise;
+    console.log(`PDF has ${pdfDoc.numPages} pages`);
+    
+    let allText = '';
+    
+    // Convert each page to image
+    for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+      const page = await pdfDoc.getPage(pageNum);
+      const viewport = page.getViewport({ scale: 2.0 }); // Higher scale = better quality
+      
+      // Create canvas
+      const canvas = new (await import('canvas')).createCanvas(viewport.width, viewport.height);
+      const ctx = canvas.getContext('2d');
+      
+      await page.render({
+        canvasContext: ctx,
+        viewport: viewport
+      }).promise;
+      
+      // Convert to base64
+      const imageBuffer = canvas.toBuffer('image/png');
+      const base64 = imageBuffer.toString('base64');
+      
+      console.log(`Converting page ${pageNum} to image...`);
+      
+      // Send to AI
+      const apiKey = process.env.OPENROUTER_API_KEY;
+      if (!apiKey) {
+        return 'Owner: Unknown';
+      }
+      
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+          'HTTP-Referer': 'https://yh-hammer.onrender.com',
+          'X-Title': 'Yellow Hammer Contract App'
+        },
+        body: JSON.stringify({
+          model: 'anthropic/claude-3-haiku',
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'text', text: 'Extract these fields from this contract image. Return each on its own line as "Field: Value": Owner, Address, Phone, Email, Total Cost, Contract Date, Shingle Manufacturer, Shingle Type, Insurance Deductible' },
+              { type: 'image_url', image_url: { url: `data:image/png;base64,${base64}` } }
+            ]
+          }],
+          max_tokens: 1500
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const extracted = data.choices[0]?.message?.content || '';
+        allText += extracted + '\n';
+      }
+    }
+    
+    return allText;
   } catch (e) {
+    console.log('PDF extraction error:', e.message);
     return '';
   }
 }
 
-// AI-powered extraction using text (not image)
-async function extractWithAI(text) {
-  try {
-    const apiKey = process.env.OPENROUTER_API_KEY;
-    if (!apiKey) return 'Owner: Unknown\nAddress: \nTotal Cost: $0';
-
-    // Send text instead of image
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-        'HTTP-Referer': 'https://yh-hammer.onrender.com',
-        'X-Title': 'Yellow Hammer Contract App'
-      },
-      body: JSON.stringify({
-        model: 'anthropic/claude-3-haiku',
-        messages: [{
-          role: 'user',
-          content: `Extract these fields from this roofing contract. Return each on its own line as "Field: Value":\n- Owner (property owner name)\n- Address (full property address)\n- Phone\n- Email\n- Total Cost (dollar amount)\n- Contract Date\n- Shingle Manufacturer\n- Shingle Type\n- Insurance Deductible\n\nContract text:\n${text.substring(0, 8000)}`
-        }],
-        max_tokens: 1500
-      })
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      console.log('API Error:', errText);
-      return '';
-    }
-
-    const data = await response.json();
-    return data.choices[0]?.message?.content || '';
-  } catch (e) {
-    console.log('AI extraction error:', e.message);
+// Extract from image (JPG, PNG)
+async function extractFromImage(imagePath, fileExt) {
+  const imageBuffer = fs.readFileSync(imagePath);
+  const base64 = imageBuffer.toString('base64');
+  const mimeType = fileExt === '.png' ? 'image/png' : 'image/jpeg';
+  
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) return 'Owner: Unknown';
+  
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+      'HTTP-Referer': 'https://yh-hammer.onrender.com',
+      'X-Title': 'Yellow Hammer Contract App'
+    },
+    body: JSON.stringify({
+      model: 'anthropic/claude-3-haiku',
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'text', text: 'Extract these fields from this contract image. Return each on its own line as "Field: Value": Owner, Address, Phone, Email, Total Cost, Contract Date, Shingle Manufacturer, Shingle Type, Insurance Deductible' },
+          { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}` } }
+        ]
+      }],
+      max_tokens: 1500
+    })
+  });
+  
+  if (!response.ok) {
+    const err = await response.text();
+    console.log('API Error:', err);
     return '';
   }
+  
+  const data = await response.json();
+  return data.choices[0]?.message?.content || '';
 }
 
 function parseOCR(text) {
   const amounts = text.match(/\$[\d,]+\.?\d{0,2}/g) || [];
   
-  // Handle "Field: Value" format from AI
   const fieldMatch = (fieldName) => {
-    // Try "Field: Value" format first
     const m = text.match(new RegExp(`Field:?\\s*${fieldName}:?\\s*([^\\n]+)`, 'i'));
     if (m) return m[1].trim();
-    // Try plain "Value:" format
     const m2 = text.match(new RegExp(`${fieldName}:?\\s*([^\\n]+)`, 'i'));
     if (m2) return m2[1].trim();
     return '';
@@ -165,16 +218,12 @@ function parseOCR(text) {
   const shingleType = fieldMatch('Shingle Type') || fieldMatch('Type') || '';
   const deductible = fieldMatch('Insurance Deductible') || fieldMatch('Deductible') || '0';
   
-  // Extract dates - look for dates in the text
   const dateMatch = text.match(/(?:Contract Date|Date):?\s*([A-Za-z0-9\s,]+)/i) || text.match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/);
   const date = dateMatch ? dateMatch[1].trim() : '';
   
-  // Get first dollar amount for total cost
   const totalCost = amounts[0] ? amounts[0].replace('$','').replace(/,/g,'') : '0';
-  
-  // Second amount is usually deductible
   const tooP = amounts[1] ? amounts[1].replace('$','').replace(/,/g,'') : deductible;
-
+  
   return {
     owner, address, phone, email,
     totalCost,
@@ -192,16 +241,12 @@ function parseOCR(text) {
 
 function getMonth(dateStr) {
   if (!dateStr) return 'April';
-  
-  // Handle "Month DD, YYYY" format
   const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   for (let i = 0; i < monthNames.length; i++) {
     if (dateStr.toLowerCase().includes(monthNames[i].toLowerCase())) {
       return monthNames[i];
     }
   }
-  
-  // Handle MM/DD/YYYY format
   const parts = dateStr.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
   if (parts) {
     const m = parseInt(parts[1]);
@@ -209,7 +254,6 @@ function getMonth(dateStr) {
       return monthNames[m - 1];
     }
   }
-  
   return 'April';
 }
 
@@ -223,58 +267,49 @@ app.post('/api/upload', upload.single('contract'), async (req, res) => {
     fs.renameSync(tempPath, newPath);
     
     console.log('Processing upload:', newName);
+    const fileExt = path.extname(req.file.originalname).toLowerCase();
     
-    // Step 1: Extract text from PDF (works for text-based PDFs)
-    let pdfText = '';
-    try {
-      const result = execSync(`python3 -c "
-import sys
-try:
-    import pdfplumber
-    with pdfplumber.open('${newPath}') as pdf:
-        for page in pdf.pages:
-            t = page.extract_text()
-            if t:
-                print(t)
-except:
-    try:
-        import fitz
-        doc = fitz.open('${newPath}')
-        for page in doc:
-            print(page.get_text())
-    except:
-        print('')
-"`, { encoding: 'utf-8', maxBuffer: 10*1024*1024 });
-      pdfText = result;
-    } catch (e) {
-      console.log('Text extraction failed:', e.message);
+    let aiText = '';
+    
+    if (fileExt === '.pdf') {
+      console.log('Processing PDF...');
+      // Try to convert PDF to image and extract
+      try {
+        aiText = await extractFromPDF(newPath);
+        console.log('PDF extracted:', aiText ? aiText.substring(0, 200) : 'empty');
+      } catch (pdfErr) {
+        console.log('PDF extraction failed:', pdfErr.message);
+        // Fallback - try simple text extraction
+        try {
+          const { pdf } = await import('pdf-parse');
+          const dataBuffer = fs.readFileSync(newPath);
+          const data = await pdf(dataBuffer);
+          aiText = data.text;
+          console.log('Fallback text extraction:', aiText.substring(0, 200));
+        } catch (e) {
+          console.log('Text extraction also failed');
+        }
+      }
+    } else if (['.jpg', '.jpeg', '.png'].includes(fileExt)) {
+      console.log('Processing image...');
+      aiText = await extractFromImage(newPath, fileExt);
+      console.log('Image extracted:', aiText ? aiText.substring(0, 200) : 'empty');
+    } else {
+      return res.status(400).json({ error: 'Unsupported file type. Please upload PDF or JPG/PNG.' });
     }
     
-    console.log('Extracted PDF text length:', pdfText.length);
-    
-    // Check if PDF has real text content
-    if (pdfText.length < 10) {
-      console.log('PDF text extraction failed - cannot read scanned PDF');
-      return res.status(400).json({ error: 'Cannot read this PDF. It may be a scanned image. Please use Edit Records to enter manually.' });
+    if (!aiText || aiText.length < 10) {
+      return res.status(400).json({ error: 'Could not extract text from file. Please use Edit Records to enter manually.' });
     }
     
-    // Step 2: Use AI to parse the text
-    const aiText = await extractWithAI(pdfText);
-    console.log('AI Extracted:', aiText ? aiText.substring(0, 300) : 'empty');
-    
-    // Step 3: Parse into fields
-    const data = parseOCR(aiText || pdfText);
+    const data = parseOCR(aiText);
     console.log('Parsed data:', JSON.stringify(data));
     
-    const month = getMonth(data.date);
-    console.log('Month:', month);
-    
-    // Validate we have real data before saving
     if (!data.owner || data.owner === 'Unknown' || data.owner.length < 3) {
-      console.log('No valid data extracted - not saving to spreadsheet');
       return res.status(400).json({ error: 'Could not extract valid contract data. Please enter manually using Edit Records.' });
     }
     
+    const month = getMonth(data.date);
     const rowData = [
       data.address, '', data.date, '', '', data.owner, data.totalCost, '$0', '$0', '$0', data.balanceDue, data.tooP,
       '', '', data.pmntMethod, data.phone, data.email, '', data.dripEdge, data.ventilation,
@@ -298,14 +333,8 @@ except:
 });
 
 app.get('/api/uploads', (req, res) => {
-  const files = fs.readdirSync(UPLOAD_DIR).filter(f => f.endsWith('.pdf'));
+  const files = fs.readdirSync(UPLOAD_DIR).filter(f => f.endsWith('.pdf') || f.endsWith('.jpg') || f.endsWith('.png'));
   res.json({ files });
-});
-
-app.get('/api/download/:filename', (req, res) => {
-  const filePath = path.join(UPLOAD_DIR, req.params.filename);
-  if (fs.existsSync(filePath)) res.download(filePath);
-  else res.status(404).json({ error: 'File not found' });
 });
 
 const PORT = process.env.PORT || 3000;
