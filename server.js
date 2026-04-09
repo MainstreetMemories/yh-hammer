@@ -1,5 +1,4 @@
 import express from 'express';
-import multer from 'multer';
 import fs from 'fs';
 import { google } from 'googleapis';
 import path from 'path';
@@ -7,14 +6,13 @@ import { fileURLToPath } from 'url';
 import fetch from 'node-fetch';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
 const credentials = JSON.parse(fs.readFileSync(path.join(__dirname, 'credentials.json')));
 const auth = new google.auth.GoogleAuth({ credentials, scopes: ['https://www.googleapis.com/auth/spreadsheets'] });
 const sheets = google.sheets({ version: 'v4', auth });
 const SPREADSHEET_ID = '1YmEsM3AvtIbNqto8DoYLMO48tH13UY23niGvRz5vOtU';
 
 const app = express();
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '15mb' }));
 app.use(express.static('public'));
 
 app.get('/api/jobs', async (req, res) => {
@@ -36,10 +34,9 @@ app.post('/api/jobs/update', async (req, res) => {
   res.json({ success: true });
 });
 
-// Send image to AI for extraction
-async function extractFromImage(base64Image, mimeType) {
+async function extractFromImage(base64, mimeType) {
   const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) return '';
+  console.log('Calling AI...');
   
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
@@ -49,14 +46,16 @@ async function extractFromImage(base64Image, mimeType) {
       messages: [{
         role: 'user',
         content: [
-          { type: 'text', text: 'Extract from this contract: Owner, Address, Phone, Email, Total Cost, Contract Date, Shingle Manufacturer, Shingle Type. Format: Field: Value' },
-          { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64Image}` } }
+          { type: 'text', text: 'Extract: Owner, Address, Phone, Email, Total Cost, Date, Shingle Manufacturer, Shingle Type. Format: Field: Value' },
+          { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}` } }
         ]
       }],
       max_tokens: 1500
     })
   });
+  
   const data = await response.json();
+  console.log('AI status:', response.status);
   return data.choices[0]?.message?.content || '';
 }
 
@@ -81,26 +80,34 @@ function getMonth(dateStr) {
   if (!dateStr) return 'April';
   const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   for (let i = 0; i < months.length; i++) if (dateStr.toLowerCase().includes(months[i].toLowerCase())) return months[i];
-  const m = dateStr.match(/(\d{1,2})[\/\-]/); if (m) { const n = parseInt(m[1]); if (n >= 1 && n <= 12) return months[n - 1]; }
+  const m = dateStr.match(/(\d{1,2})[\/\-]/); 
+  if (m) { const n = parseInt(m[1]); if (n >= 1 && n <= 12) return months[n - 1]; }
   return 'April';
 }
 
 app.post('/api/upload', async (req, res) => {
+  console.log('=== UPLOAD ===');
+  console.log('Body keys:', Object.keys(req.body));
+  
+  const { image, mimeType } = req.body;
+  
+  if (!image) {
+    console.log('ERROR: No image received');
+    return res.status(400).json({ error: 'No image provided. Please try uploading again.' });
+  }
+  
+  console.log('Image length:', image?.length || 0);
+  console.log('mimeType:', mimeType);
+  
   try {
-    const { image, type } = req.body;
-    if (!image) return res.status(400).json({ error: 'No image provided' });
-    
-    console.log('Processing image, type:', type);
-    
-    const mimeType = type || 'image/jpeg';
-    const aiResult = await extractFromImage(image, mimeType);
-    console.log('AI result:', aiResult.substring(0, 200));
+    const aiResult = await extractFromImage(image, mimeType || 'image/jpeg');
+    console.log('AI result:', aiResult?.substring(0, 100));
     
     const data = parseOCR(aiResult);
     console.log('Parsed:', JSON.stringify(data));
     
     if (!data.owner || data.owner === 'Unknown' || data.owner.length < 3) {
-      return res.status(400).json({ error: 'Could not extract valid data. Please enter manually.' });
+      return res.status(400).json({ error: 'Could not read this contract. Please enter manually.' });
     }
     
     const month = getMonth(data.date);
@@ -111,10 +118,10 @@ app.post('/api/upload', async (req, res) => {
     
     await sheets.spreadsheets.values.update({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A${nextRow}:Z${nextRow}`, valueInputOption: 'USER_ENTERED', requestBody: { values: [rowData] } });
     
-    console.log(`Saved to ${month} row ${nextRow}`);
+    console.log('SAVED:', month, 'row', nextRow);
     res.json({ success: true, month, owner: data.owner });
   } catch (err) {
-    console.error('Error:', err);
+    console.error('ERROR:', err);
     res.status(500).json({ error: err.message });
   }
 });
