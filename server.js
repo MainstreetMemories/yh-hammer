@@ -12,8 +12,11 @@ const sheets = google.sheets({ version: 'v4', auth });
 const SPREADSHEET_ID = '1YmEsM3AvtIbNqto8DoYLMO48tH13UY23niGvRz5vOtU';
 
 const app = express();
-app.use(express.json({ limit: '25mb' }));
-app.use(express.urlencoded({ extended: true, limit: '25mb' }));
+
+// Force proper body parsing - handle all types
+app.use(express.json({ type: '*/*', limit: '25mb' }));
+app.use(express.urlencoded({ extended: true, type: '*/*', limit: '25mb' }));
+
 app.use(express.static('public'));
 
 app.get('/api/jobs', async (req, res) => {
@@ -35,27 +38,42 @@ app.post('/api/jobs/update', async (req, res) => {
   res.json({ success: true });
 });
 
-app.post('/api/upload', async (req, res) => {
+// Raw body parser for upload
+app.post('/api/upload', express.raw({ type: '*/*', limit: '25mb' }), async (req, res) => {
   console.log('=== UPLOAD ===');
   console.log('Content-Type:', req.get('content-type'));
-  console.log('Body:', JSON.stringify(req.body).substring(0, 200));
-  console.log('Body keys:', Object.keys(req.body));
   
-  // Support both JSON and URL-encoded
-  const body = req.body;
-  let image = body.image || body.img || body.file;
-  let mimeType = body.mimeType || body.mime || body.type || 'image/jpeg';
+  let image, mimeType;
   
-  console.log('Found image:', !!image);
-  console.log('Image length:', image?.length || 0);
+  // Try to parse as JSON first
+  if (req.get('content-type')?.includes('application/json')) {
+    try {
+      const json = JSON.parse(req.body.toString());
+      image = json.image || json.img;
+      mimeType = json.mimeType || json.mime || 'image/jpeg';
+      console.log('Parsed JSON, image length:', image?.length);
+    } catch (e) {
+      console.log('JSON parse failed');
+    }
+  }
+  
+  // If still no image, try URL-encoded
+  if (!image) {
+    const params = new URLSearchParams(req.body.toString());
+    image = params.get('image') || params.get('img');
+    mimeType = params.get('mimeType') || params.get('mime') || 'image/jpeg';
+    console.log('Parsed URL-encoded, image length:', image?.length);
+  }
   
   if (!image) {
-    return res.status(400).json({ error: 'No image provided. Please try uploading again.' });
+    console.log('ERROR: No image found');
+    console.log('Body string:', req.body.toString().substring(0, 200));
+    return res.status(400).json({ error: 'No image provided' });
   }
   
   try {
     const apiKey = process.env.OPENROUTER_API_KEY;
-    console.log('Sending to AI...');
+    console.log('Sending to AI, image size:', image.length);
     
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -110,7 +128,7 @@ app.post('/api/upload', async (req, res) => {
     
     await sheets.spreadsheets.values.update({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A${nextRow}:Z${nextRow}`, valueInputOption: 'USER_ENTERED', requestBody: { values: [rowData] } });
     
-    console.log('SAVED');
+    console.log('SAVED to', month);
     res.json({ success: true, month, owner: jobData.owner });
   } catch (err) {
     console.error('ERROR:', err);
