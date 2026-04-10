@@ -24,7 +24,7 @@
 
     <div id="menu" class="grid gap-4">
       <button onclick="document.getElementById('file-input').click()" class="btn-primary w-full py-6 px-6 rounded-xl text-white font-semibold text-lg shadow-lg">
-        Upload Contract
+        Upload Contract (PDF or Photo)
       </button>
       <input type="file" id="file-input" accept=".pdf,.jpg,.jpeg,.png" class="hidden" onchange="handleFileSelect(event)">
       
@@ -47,13 +47,17 @@
     </div>
 
     <div class="mt-8">
-      <h2 class="text-gray-400 text-sm font-semibold mb-3">Recent</h2>
-      <div id="recent-list" class="text-gray-500 text-sm">No uploads yet</div>
+      <div class="bg-gray-800 rounded-lg p-4 text-sm text-gray-400">
+        <p class="text-amber-500 font-semibold mb-2">📸 How to use:</p>
+        <p>Upload a photo (JPG/PNG) of the contract or a PDF. The AI will extract the data automatically.</p>
+      </div>
     </div>
   </div>
 
   <script>
+    // Initialize PDF.js
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    
     const API_URL = window.location.origin;
     let allJobs = {}, currentMonth = 'April';
 
@@ -62,7 +66,7 @@
       el.className = `mb-4 p-3 rounded-lg text-center ${error ? 'bg-red-900' : 'bg-green-900'} text-white`;
       el.textContent = msg;
       el.classList.remove('hidden');
-      setTimeout(() => el.classList.add('hidden'), 5000);
+      setTimeout(() => el.classList.add('hidden'), 6000);
     }
 
     function showProgress(show, text = 'Processing...') {
@@ -75,17 +79,15 @@
       document.getElementById('jobs-view').classList.add('hidden');
     }
 
-    function showJobsView() {
+    async function showJobsView() {
       showProgress(true, 'Loading...');
       fetch(API_URL + '/api/jobs').then(r => r.json()).then(jobs => {
         allJobs = jobs;
         const months = Object.keys(jobs);
         currentMonth = months.includes('April') ? 'April' : months[0];
-        
         document.getElementById('month-tabs').innerHTML = months.map(m => 
           `<button onclick="selectMonth('${m}')" class="px-3 py-1 rounded text-sm ${m === currentMonth ? 'bg-amber-500 text-white' : 'bg-gray-700 text-gray-300'}">${m}</button>`
         ).join('');
-        
         showJobsForMonth(currentMonth);
         document.getElementById('menu').classList.add('hidden');
         document.getElementById('jobs-view').classList.remove('hidden');
@@ -96,39 +98,51 @@
 
     function showJobsForMonth(month) {
       const jobs = allJobs[month] || [];
-      const list = document.getElementById('jobs-list');
-      list.innerHTML = jobs.length ? jobs.map((j, i) => 
-        `<div class="bg-gray-800 p-3 rounded-lg">
-          <div class="text-white">${j.owner || 'Unknown'}</div>
-          <div class="text-gray-400 text-sm">${j.address || ''}</div>
-        </div>`
+      document.getElementById('jobs-list').innerHTML = jobs.length ? jobs.map(j => 
+        `<div class="bg-gray-800 p-3 rounded-lg"><div class="text-white">${j.owner || 'Unknown'}</div><div class="text-gray-400 text-sm">${j.address || ''}</div></div>`
       ).join('') : '<p class="text-gray-500">No jobs</p>';
     }
 
-    // Handle file selection
+    // Convert PDF to image using PDF.js
+    async function convertPdfToImage(file) {
+      console.log('Converting PDF to image...');
+      
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      console.log('PDF pages:', pdf.numPages);
+      
+      const page = await pdf.getPage(1);
+      const viewport = page.getViewport({ scale: 2.0 });
+      
+      // Create canvas
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      
+      const ctx = canvas.getContext('2d');
+      await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+      
+      // Convert to base64 JPEG
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      const base64 = dataUrl.split(',')[1];
+      
+      console.log('Converted image size:', base64.length);
+      return base64;
+    }
+
     async function handleFileSelect(event) {
       const file = event.target.files[0];
       if (!file) return;
 
-      showProgress(true, 'Processing...');
+      showProgress(true, 'Processing contract...');
       
       try {
-        let base64, mimeType;
         const fileExt = file.name.toLowerCase().split('.').pop();
+        let base64, mimeType;
         
         if (fileExt === 'pdf') {
-          // Convert PDF to image in browser
-          const arrayBuffer = await file.arrayBuffer();
-          const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-          const page = await pdf.getPage(1);
-          const viewport = page.getViewport({ scale: 2.0 });
-          
-          const canvas = document.createElement('canvas');
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-          
-          base64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+          // Convert PDF to image
+          base64 = await convertPdfToImage(file);
           mimeType = 'image/jpeg';
         } else {
           // For images, convert to base64
@@ -140,7 +154,7 @@
           mimeType = file.type || 'image/jpeg';
         }
 
-        console.log('Sending to server, base64 length:', base64.length, 'mime:', mimeType);
+        console.log('Sending to server, size:', base64.length, 'type:', mimeType);
 
         const response = await fetch(API_URL + '/api/upload', {
           method: 'POST',
@@ -152,12 +166,12 @@
         console.log('Response:', result);
 
         if (response.ok) {
-          showStatus('Contract added to ' + result.month + '!');
+          showStatus('✓ Contract added to ' + result.month + '!');
         } else {
-          showStatus(result.error || 'Error', true);
+          showStatus(result.error || 'Error uploading', true);
         }
       } catch (err) {
-        console.error(err);
+        console.error('Error:', err);
         showStatus('Error: ' + err.message, true);
       }
 
