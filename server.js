@@ -13,18 +13,12 @@ const sheets = google.sheets({ version: 'v4', auth });
 const SPREADSHEET_ID = '1YmEsM3AvtIbNqto8DoYLMO48tH13UY23niGvRz5vOtU';
 
 const app = express();
-app.use(express.json());
 
-// Multer for FormData with specific field names
-const upload = multer({
-  storage: multer.memoryStorage(),
-  fields: [
-    { name: 'image', maxCount: 1 },
-    { name: 'type', maxCount: 1 }
-  ]
-});
+// Multer - accept any fields for upload
+const upload = multer({ storage: multer.memoryStorage() });
 
 app.use(express.static('public'));
+app.use(express.json());
 
 app.get('/api/jobs', async (req, res) => {
   const result = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
@@ -37,81 +31,89 @@ app.get('/api/jobs', async (req, res) => {
   res.json(allJobs);
 });
 
-app.post('/api/upload', upload.any(), async (req, res) => {
-  console.log('=== UPLOAD ===');
-  console.log('Files:', req.files?.map(f => f.fieldname));
-  console.log('Body:', req.body);
-  
-  // Get image from FormData
-  const file = req.files?.find(f => f.fieldname === 'image');
-  const typeField = req.files?.find(f => f.fieldname === 'type');
-  
-  const image = file ? file.buffer.toString('base64') : req.body.image;
-  const mimeType = typeField ? typeField.text : 'image/jpeg';
-  
-  console.log('Image length:', image?.length);
-  console.log('Mime:', mimeType);
-  
-  if (!image) {
-    return res.status(400).json({ error: 'No image provided' });
-  }
-  
-  try {
-    const apiKey = process.env.OPENROUTER_API_KEY;
-    
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}`, 'HTTP-Referer': 'https://yh-hammer.onrender.com', 'X-Title': 'Yellow Hammer' },
-      body: JSON.stringify({
-        model: 'anthropic/claude-3-haiku',
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'text', text: 'Extract: Owner, Address, Phone, Email, Total Cost, Date, Shingle info. Format: Field: Value' },
-            { type: 'image_url', image_url: { url: `data:${mimeType};base64,${image}` } }
-          ]
-        }],
-        max_tokens: 1500
-      })
-    });
-    
-    const data = await response.json();
-    const text = data.choices[0]?.message?.content || '';
-    console.log('AI:', text.substring(0, 100));
-    
-    const field = (n) => { const m = text.match(new RegExp(`(?:Field:\\s*)?${n}:?\\s*([^\\n]+)`, 'i')); return m ? m[1].trim() : ''; };
-    const amounts = text.match(/\$[\d,]+\.?\d{0,2}/g) || [];
-    
-    const job = {
-      owner: field('Owner') || 'Unknown',
-      address: field('Address') || '',
-      phone: field('Phone') || '',
-      email: field('Email') || '',
-      totalCost: amounts[0]?.replace(/[$,]/g, '') || '0',
-      date: field('Date') || field('Contract Date') || '',
-      manufacturer: field('Manufacturer') || '',
-      shingleType: field('Type') || ''
-    };
-    
-    if (!job.owner || job.owner === 'Unknown') {
-      return res.status(400).json({ error: 'Could not read contract' });
+// Upload handler - accept any multipart data
+app.post('/api/upload', (req, res) => {
+  upload.any()(req, res, async (err) => {
+    if (err) {
+      console.error('Multer error:', err);
+      return res.status(400).json({ error: err.message });
     }
     
-    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-    let month = 'April';
-    for (let i = 0; i < months.length; i++) if (job.date.toLowerCase().includes(months[i].toLowerCase())) month = months[i];
+    console.log('Files:', req.files?.map(f => ({ name: f.fieldname, size: f.size })));
+    console.log('Body:', req.body);
     
-    const rowData = [job.address, '', job.date, '', '', job.owner, job.totalCost, '$0', '$0', '$0', job.totalCost, '$0', '', '', 'Check', job.phone, job.email, '', 'Black', 'Black', job.manufacturer, job.shingleType, '', '', ''];
+    // Find the image file - any non-text field
+    const file = req.files?.find(f => f.fieldname !== 'type' && !f.fieldname.includes('mime'));
+    const typeField = req.files?.find(f => f.fieldname === 'type' || f.fieldname.includes('mime'));
     
-    const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A:A` });
-    const nextRow = (r.data.values?.length || 0) + 1;
+    console.log('Selected file:', file?.fieldname, file?.size);
     
-    await sheets.spreadsheets.values.update({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A${nextRow}:Z${nextRow}`, valueInputOption: 'USER_ENTERED', requestBody: { values: [rowData] } });
+    const image = file ? file.buffer.toString('base64') : null;
+    const mimeType = typeField?.text || file?.mimetype || 'image/jpeg';
     
-    res.json({ success: true, month, owner: job.owner });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    console.log('Image length:', image?.length);
+    
+    if (!image) {
+      return res.status(400).json({ error: 'No image provided' });
+    }
+    
+    try {
+      const apiKey = process.env.OPENROUTER_API_KEY;
+      
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}`, 'HTTP-Referer': 'https://yh-hammer.onrender.com', 'X-Title': 'Yellow Hammer' },
+        body: JSON.stringify({
+          model: 'anthropic/claude-3-haiku',
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'text', text: 'Extract: Owner, Address, Phone, Email, Total Cost, Date, Shingle info. Format: Field: Value' },
+              { type: 'image_url', image_url: { url: `data:${mimeType};base64,${image}` } }
+            ]
+          }],
+          max_tokens: 1500
+        })
+      });
+      
+      const data = await response.json();
+      const text = data.choices[0]?.message?.content || '';
+      console.log('AI:', text.substring(0, 100));
+      
+      const field = (n) => { const m = text.match(new RegExp(`(?:Field:\\s*)?${n}:?\\s*([^\\n]+)`, 'i')); return m ? m[1].trim() : ''; };
+      const amounts = text.match(/\$[\d,]+\.?\d{0,2}/g) || [];
+      
+      const job = {
+        owner: field('Owner') || 'Unknown',
+        address: field('Address') || '',
+        phone: field('Phone') || '',
+        email: field('Email') || '',
+        totalCost: amounts[0]?.replace(/[$,]/g, '') || '0',
+        date: field('Date') || field('Contract Date') || '',
+        manufacturer: field('Manufacturer') || '',
+        shingleType: field('Type') || ''
+      };
+      
+      if (!job.owner || job.owner === 'Unknown') {
+        return res.status(400).json({ error: 'Could not read contract' });
+      }
+      
+      const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      let month = 'April';
+      for (let i = 0; i < months.length; i++) if (job.date.toLowerCase().includes(months[i].toLowerCase())) month = months[i];
+      
+      const rowData = [job.address, '', job.date, '', '', job.owner, job.totalCost, '$0', '$0', '$0', job.totalCost, '$0', '', '', 'Check', job.phone, job.email, '', 'Black', 'Black', job.manufacturer, job.shingleType, '', '', ''];
+      
+      const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A:A` });
+      const nextRow = (r.data.values?.length || 0) + 1;
+      
+      await sheets.spreadsheets.values.update({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A${nextRow}:Z${nextRow}`, valueInputOption: 'USER_ENTERED', requestBody: { values: [rowData] } });
+      
+      res.json({ success: true, month, owner: job.owner });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
 });
 
 app.listen(process.env.PORT || 3000, () => console.log('Running'));
