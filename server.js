@@ -1,5 +1,4 @@
 import express from 'express';
-import multer from 'multer';
 import fs from 'fs';
 import { google } from 'googleapis';
 import path from 'path';
@@ -13,13 +12,8 @@ const sheets = google.sheets({ version: 'v4', auth });
 const SPREADSHEET_ID = '1YmEsM3AvtIbNqto8DoYLMO48tH13UY23niGvRz5vOtU';
 
 const app = express();
-
-// Handle JSON
-app.use(express.json({ limit: '20mb' }));
-
-// Handle FormData with multer
-const upload = multer({ storage: multer.memoryStorage() });
-
+app.use(express.json({ limit: '25mb' }));
+app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 app.use(express.static('public'));
 
 app.get('/api/jobs', async (req, res) => {
@@ -41,40 +35,27 @@ app.post('/api/jobs/update', async (req, res) => {
   res.json({ success: true });
 });
 
-// Accept both JSON and FormData
-app.post('/api/upload', upload.none(), async (req, res) => {
+app.post('/api/upload', async (req, res) => {
   console.log('=== UPLOAD ===');
   console.log('Content-Type:', req.get('content-type'));
+  console.log('Body:', JSON.stringify(req.body).substring(0, 200));
   console.log('Body keys:', Object.keys(req.body));
-  console.log('Files:', req.files ? req.files.length : 0);
   
-  let image, mimeType;
+  // Support both JSON and URL-encoded
+  const body = req.body;
+  let image = body.image || body.img || body.file;
+  let mimeType = body.mimeType || body.mime || body.type || 'image/jpeg';
   
-  // Case 1: JSON body (from fetch with JSON.stringify)
-  if (req.body.image) {
-    image = req.body.image;
-    mimeType = req.body.mimeType || 'image/jpeg';
-    console.log('Got JSON data, length:', image.length);
-  }
-  // Case 2: FormData (from form upload)
-  else if (req.files && req.files.length > 0) {
-    const file = req.files[0];
-    if (file.fieldname === 'image') {
-      image = file.buffer.toString('base64');
-      mimeType = file.mimetype || 'image/jpeg';
-      console.log('Got FormData file, length:', image.length);
-    }
-  }
+  console.log('Found image:', !!image);
+  console.log('Image length:', image?.length || 0);
   
   if (!image) {
-    console.log('ERROR: No image found');
-    console.log('Body:', JSON.stringify(req.body).substring(0, 500));
-    return res.status(400).json({ error: 'No image provided' });
+    return res.status(400).json({ error: 'No image provided. Please try uploading again.' });
   }
   
   try {
     const apiKey = process.env.OPENROUTER_API_KEY;
-    console.log('Calling AI...');
+    console.log('Sending to AI...');
     
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -94,7 +75,7 @@ app.post('/api/upload', upload.none(), async (req, res) => {
     
     const data = await response.json();
     const text = data.choices[0]?.message?.content || '';
-    console.log('AI result:', text.substring(0, 100));
+    console.log('AI result:', text.substring(0, 150));
     
     const field = (name) => { const m = text.match(new RegExp(`(?:Field:\\s*)?${name}:?\\s*([^\\n]+)`, 'i')); return m ? m[1].trim() : ''; };
     const amounts = text.match(/\$[\d,]+\.?\d{0,2}/g) || [];
@@ -129,7 +110,7 @@ app.post('/api/upload', upload.none(), async (req, res) => {
     
     await sheets.spreadsheets.values.update({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A${nextRow}:Z${nextRow}`, valueInputOption: 'USER_ENTERED', requestBody: { values: [rowData] } });
     
-    console.log('SAVED to', month);
+    console.log('SAVED');
     res.json({ success: true, month, owner: jobData.owner });
   } catch (err) {
     console.error('ERROR:', err);
