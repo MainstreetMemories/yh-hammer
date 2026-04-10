@@ -7,7 +7,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
     body { font-family: 'Inter', sans-serif; }
     .btn-primary { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
     .btn-secondary { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
@@ -23,155 +22,110 @@
     <div id="status" class="hidden mb-4 p-3 rounded-lg text-center"></div>
 
     <div id="menu" class="grid gap-4">
-      <button onclick="document.getElementById('file-input').click()" class="btn-primary w-full py-6 px-6 rounded-xl text-white font-semibold text-lg shadow-lg">
-        Upload Contract (PDF or Photo)
+      <button onclick="document.getElementById('file-input').click()" class="btn-primary w-full py-6 px-6 rounded-xl text-white font-semibold text-lg">
+        Upload Contract
       </button>
-      <input type="file" id="file-input" accept=".pdf,.jpg,.jpeg,.png" class="hidden" onchange="handleFileSelect(event)">
+      <input type="file" id="file-input" accept=".pdf,.jpg,.jpeg,.png" class="hidden" onchange="handleFile(event)">
       
-      <button onclick="showJobsView()" class="btn-secondary w-full py-6 px-6 rounded-xl text-white font-semibold text-lg shadow-lg">
+      <button onclick="showJobs()" class="btn-secondary w-full py-6 px-6 rounded-xl text-white font-semibold text-lg">
         Edit Records
       </button>
     </div>
 
-    <div id="jobs-view" class="hidden">
+    <div id="jobs" class="hidden">
       <button onclick="showMenu()" class="mb-4 text-amber-500">← Back</button>
-      <h2 class="text-white text-xl font-semibold mb-4">Edit Records</h2>
-      <div id="month-tabs" class="flex flex-wrap gap-2 mb-4"></div>
-      <div id="jobs-list" class="space-y-2"></div>
+      <h2 class="text-white text-xl mb-4">Edit Records</h2>
+      <div id="jobs-list"></div>
     </div>
 
     <div id="progress" class="hidden mt-4">
-      <div class="bg-gray-800 rounded-lg p-4">
-        <p class="text-amber-500 text-center" id="progress-text">Processing...</p>
-      </div>
-    </div>
-
-    <div class="mt-8">
-      <div class="bg-gray-800 rounded-lg p-4 text-sm text-gray-400">
-        <p class="text-amber-500 font-semibold mb-2">📸 How to use:</p>
-        <p>Upload a photo (JPG/PNG) of the contract or a PDF. The AI will extract the data automatically.</p>
-      </div>
+      <p class="text-amber-500 text-center" id="progress-text">Processing...</p>
     </div>
   </div>
 
   <script>
-    // Initialize PDF.js
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    
-    const API_URL = window.location.origin;
-    let allJobs = {}, currentMonth = 'April';
+    const API = window.location.origin;
 
-    function showStatus(msg, error = false) {
+    function showStatus(msg, err) {
       const el = document.getElementById('status');
-      el.className = `mb-4 p-3 rounded-lg text-center ${error ? 'bg-red-900' : 'bg-green-900'} text-white`;
       el.textContent = msg;
+      el.className = `mb-4 p-3 rounded-lg text-center ${err ? 'bg-red-900' : 'bg-green-900'} text-white`;
       el.classList.remove('hidden');
       setTimeout(() => el.classList.add('hidden'), 6000);
     }
 
-    function showProgress(show, text = 'Processing...') {
+    function showProgress(show, text) {
       document.getElementById('progress').className = show ? 'mt-4' : 'hidden';
       document.getElementById('progress-text').textContent = text;
     }
 
     function showMenu() {
       document.getElementById('menu').classList.remove('hidden');
-      document.getElementById('jobs-view').classList.add('hidden');
+      document.getElementById('jobs').classList.add('hidden');
     }
 
-    async function showJobsView() {
-      showProgress(true, 'Loading...');
-      fetch(API_URL + '/api/jobs').then(r => r.json()).then(jobs => {
-        allJobs = jobs;
-        const months = Object.keys(jobs);
-        currentMonth = months.includes('April') ? 'April' : months[0];
-        document.getElementById('month-tabs').innerHTML = months.map(m => 
-          `<button onclick="selectMonth('${m}')" class="px-3 py-1 rounded text-sm ${m === currentMonth ? 'bg-amber-500 text-white' : 'bg-gray-700 text-gray-300'}">${m}</button>`
-        ).join('');
-        showJobsForMonth(currentMonth);
-        document.getElementById('menu').classList.add('hidden');
-        document.getElementById('jobs-view').classList.remove('hidden');
-      }).finally(() => showProgress(false));
+    function showJobs() {
+      document.getElementById('menu').classList.add('hidden');
+      document.getElementById('jobs').classList.remove('hidden');
     }
 
-    function selectMonth(m) { currentMonth = m; showJobsForMonth(m); }
-
-    function showJobsForMonth(month) {
-      const jobs = allJobs[month] || [];
-      document.getElementById('jobs-list').innerHTML = jobs.length ? jobs.map(j => 
-        `<div class="bg-gray-800 p-3 rounded-lg"><div class="text-white">${j.owner || 'Unknown'}</div><div class="text-gray-400 text-sm">${j.address || ''}</div></div>`
-      ).join('') : '<p class="text-gray-500">No jobs</p>';
-    }
-
-    // Convert PDF to image using PDF.js
-    async function convertPdfToImage(file) {
-      console.log('Converting PDF to image...');
-      
-      const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      console.log('PDF pages:', pdf.numPages);
-      
-      const page = await pdf.getPage(1);
-      const viewport = page.getViewport({ scale: 2.0 });
-      
-      // Create canvas
-      const canvas = document.createElement('canvas');
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-      
-      const ctx = canvas.getContext('2d');
-      await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-      
-      // Convert to base64 JPEG
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-      const base64 = dataUrl.split(',')[1];
-      
-      console.log('Converted image size:', base64.length);
-      return base64;
-    }
-
-    async function handleFileSelect(event) {
+    async function handleFile(event) {
       const file = event.target.files[0];
       if (!file) return;
-
-      showProgress(true, 'Processing contract...');
+      
+      showProgress(true, 'Processing...');
       
       try {
-        const fileExt = file.name.toLowerCase().split('.').pop();
-        let base64, mimeType;
+        // Convert file to base64 image
+        let base64, type;
         
-        if (fileExt === 'pdf') {
-          // Convert PDF to image
-          base64 = await convertPdfToImage(file);
-          mimeType = 'image/jpeg';
+        if (file.name.toLowerCase().endsWith('.pdf')) {
+          // PDF -> convert to image
+          const buffer = await file.arrayBuffer();
+          const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+          const page = await pdf.getPage(1);
+          const viewport = page.getViewport({ scale: 2.0 });
+          
+          const canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+          
+          base64 = canvas.toDataURL('image/jpeg').split(',')[1];
+          type = 'image/jpeg';
         } else {
-          // For images, convert to base64
-          base64 = await new Promise(resolve => {
+          // Image -> just use it
+          base64 = await new Promise(r => {
             const reader = new FileReader();
-            reader.onload = () => resolve(reader.result.split(',')[1]);
+            reader.onload = () => r(reader.result.split(',')[1]);
             reader.readAsDataURL(file);
           });
-          mimeType = file.type || 'image/jpeg';
+          type = file.type || 'image/jpeg';
         }
 
-        console.log('Sending to server, size:', base64.length, 'type:', mimeType);
+        console.log('File converted, size:', base64.length);
 
-        const response = await fetch(API_URL + '/api/upload', {
+        // Send as simple form data
+        const formData = new FormData();
+        formData.append('image', base64);
+        formData.append('type', type);
+
+        const response = await fetch(API + '/api/upload', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: base64, mimeType: mimeType })
+          body: formData
         });
 
         const result = await response.json();
-        console.log('Response:', result);
+        console.log('Result:', result);
 
         if (response.ok) {
-          showStatus('✓ Contract added to ' + result.month + '!');
+          showStatus('✓ Added to ' + result.month);
         } else {
-          showStatus(result.error || 'Error uploading', true);
+          showStatus(result.error || 'Error', true);
         }
       } catch (err) {
-        console.error('Error:', err);
+        console.error(err);
         showStatus('Error: ' + err.message, true);
       }
 

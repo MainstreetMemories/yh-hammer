@@ -1,4 +1,5 @@
 import express from 'express';
+import multer from 'multer';
 import fs from 'fs';
 import { google } from 'googleapis';
 import path from 'path';
@@ -12,10 +13,16 @@ const sheets = google.sheets({ version: 'v4', auth });
 const SPREADSHEET_ID = '1YmEsM3AvtIbNqto8DoYLMO48tH13UY23niGvRz5vOtU';
 
 const app = express();
+app.use(express.json());
 
-// Force proper body parsing - handle all types
-app.use(express.json({ type: '*/*', limit: '25mb' }));
-app.use(express.urlencoded({ extended: true, type: '*/*', limit: '25mb' }));
+// Multer for FormData with specific field names
+const upload = multer({
+  storage: multer.memoryStorage(),
+  fields: [
+    { name: 'image', maxCount: 1 },
+    { name: 'type', maxCount: 1 }
+  ]
+});
 
 app.use(express.static('public'));
 
@@ -25,55 +32,32 @@ app.get('/api/jobs', async (req, res) => {
   const allJobs = {};
   for (const month of months) {
     const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A4:Z` });
-    allJobs[month] = (r.data.values || []).map((job, idx) => ({ row: idx + 4, address: job[0] || '', owner: job[5] || '', phone: job[15] || '', email: job[16] || '', contractDate: job[2] || '', totalCost: job[6] || '', manufacturer: job[21] || '', shingleType: job[22] || '' }));
+    allJobs[month] = (r.data.values || []).map((job, idx) => ({ row: idx + 4, address: job[0] || '', owner: job[5] || '', phone: job[15] || '', email: job[16] || '', totalCost: job[6] || '' }));
   }
   res.json(allJobs);
 });
 
-app.post('/api/jobs/update', async (req, res) => {
-  const { month, row, field, value } = req.body;
-  const map = { address: 'A', owner: 'F', totalCost: 'G', phone: 'P', email: 'Q', manufacturer: 'W', shingleType: 'X', notes: 'Z' };
-  if (!map[field]) return res.status(400).json({ error: 'Invalid field' });
-  await sheets.spreadsheets.values.update({ spreadsheetId: SPREADSHEET_ID, range: `${month}!${map[field]}${row}`, valueInputOption: 'USER_ENTERED', requestBody: { values: [[value]] } });
-  res.json({ success: true });
-});
-
-// Raw body parser for upload
-app.post('/api/upload', express.raw({ type: '*/*', limit: '25mb' }), async (req, res) => {
+app.post('/api/upload', upload.any(), async (req, res) => {
   console.log('=== UPLOAD ===');
-  console.log('Content-Type:', req.get('content-type'));
+  console.log('Files:', req.files?.map(f => f.fieldname));
+  console.log('Body:', req.body);
   
-  let image, mimeType;
+  // Get image from FormData
+  const file = req.files?.find(f => f.fieldname === 'image');
+  const typeField = req.files?.find(f => f.fieldname === 'type');
   
-  // Try to parse as JSON first
-  if (req.get('content-type')?.includes('application/json')) {
-    try {
-      const json = JSON.parse(req.body.toString());
-      image = json.image || json.img;
-      mimeType = json.mimeType || json.mime || 'image/jpeg';
-      console.log('Parsed JSON, image length:', image?.length);
-    } catch (e) {
-      console.log('JSON parse failed');
-    }
-  }
+  const image = file ? file.buffer.toString('base64') : req.body.image;
+  const mimeType = typeField ? typeField.text : 'image/jpeg';
   
-  // If still no image, try URL-encoded
-  if (!image) {
-    const params = new URLSearchParams(req.body.toString());
-    image = params.get('image') || params.get('img');
-    mimeType = params.get('mimeType') || params.get('mime') || 'image/jpeg';
-    console.log('Parsed URL-encoded, image length:', image?.length);
-  }
+  console.log('Image length:', image?.length);
+  console.log('Mime:', mimeType);
   
   if (!image) {
-    console.log('ERROR: No image found');
-    console.log('Body string:', req.body.toString().substring(0, 200));
     return res.status(400).json({ error: 'No image provided' });
   }
   
   try {
     const apiKey = process.env.OPENROUTER_API_KEY;
-    console.log('Sending to AI, image size:', image.length);
     
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -93,47 +77,41 @@ app.post('/api/upload', express.raw({ type: '*/*', limit: '25mb' }), async (req,
     
     const data = await response.json();
     const text = data.choices[0]?.message?.content || '';
-    console.log('AI result:', text.substring(0, 150));
+    console.log('AI:', text.substring(0, 100));
     
-    const field = (name) => { const m = text.match(new RegExp(`(?:Field:\\s*)?${name}:?\\s*([^\\n]+)`, 'i')); return m ? m[1].trim() : ''; };
+    const field = (n) => { const m = text.match(new RegExp(`(?:Field:\\s*)?${n}:?\\s*([^\\n]+)`, 'i')); return m ? m[1].trim() : ''; };
     const amounts = text.match(/\$[\d,]+\.?\d{0,2}/g) || [];
     
-    const jobData = {
+    const job = {
       owner: field('Owner') || 'Unknown',
       address: field('Address') || '',
       phone: field('Phone') || '',
       email: field('Email') || '',
       totalCost: amounts[0]?.replace(/[$,]/g, '') || '0',
-      balanceDue: amounts[0]?.replace(/[$,]/g, '') || '0',
-      tooP: amounts[1]?.replace(/[$,]/g, '') || field('Deductible') || '0',
       date: field('Date') || field('Contract Date') || '',
       manufacturer: field('Manufacturer') || '',
       shingleType: field('Type') || ''
     };
     
-    if (!jobData.owner || jobData.owner === 'Unknown') {
-      return res.status(400).json({ error: 'Could not read contract. Enter manually.' });
+    if (!job.owner || job.owner === 'Unknown') {
+      return res.status(400).json({ error: 'Could not read contract' });
     }
     
     const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     let month = 'April';
-    for (let i = 0; i < months.length; i++) if (jobData.date.toLowerCase().includes(months[i].toLowerCase())) month = months[i];
-    const m = jobData.date.match(/(\d{1,2})[\/\-]/); 
-    if (m) { const n = parseInt(m[1]); if (n >= 1 && n <= 12) month = months[n - 1]; }
+    for (let i = 0; i < months.length; i++) if (job.date.toLowerCase().includes(months[i].toLowerCase())) month = months[i];
     
-    const rowData = [jobData.address, '', jobData.date, '', '', jobData.owner, jobData.totalCost, '$0', '$0', '$0', jobData.balanceDue, jobData.tooP, '', '', 'Check', jobData.phone, jobData.email, '', 'Black', 'Black', jobData.manufacturer, jobData.shingleType, '', '', ''];
+    const rowData = [job.address, '', job.date, '', '', job.owner, job.totalCost, '$0', '$0', '$0', job.totalCost, '$0', '', '', 'Check', job.phone, job.email, '', 'Black', 'Black', job.manufacturer, job.shingleType, '', '', ''];
     
     const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A:A` });
     const nextRow = (r.data.values?.length || 0) + 1;
     
     await sheets.spreadsheets.values.update({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A${nextRow}:Z${nextRow}`, valueInputOption: 'USER_ENTERED', requestBody: { values: [rowData] } });
     
-    console.log('SAVED to', month);
-    res.json({ success: true, month, owner: jobData.owner });
+    res.json({ success: true, month, owner: job.owner });
   } catch (err) {
-    console.error('ERROR:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-app.listen(process.env.PORT || 3000, () => console.log('App running'));
+app.listen(process.env.PORT || 3000, () => console.log('Running'));
