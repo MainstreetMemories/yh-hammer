@@ -1,4 +1,5 @@
 import express from 'express';
+import multer from 'multer';
 import fs from 'fs';
 import { google } from 'googleapis';
 import path from 'path';
@@ -12,7 +13,12 @@ const sheets = google.sheets({ version: 'v4', auth });
 const SPREADSHEET_ID = '1YmEsM3AvtIbNqto8DoYLMO48tH13UY23niGvRz5vOtU';
 
 const app = express();
+
+// Handle JSON
 app.use(express.json({ limit: '20mb' }));
+
+// Handle FormData with multer
+const upload = multer({ storage: multer.memoryStorage() });
 
 app.use(express.static('public'));
 
@@ -35,16 +41,36 @@ app.post('/api/jobs/update', async (req, res) => {
   res.json({ success: true });
 });
 
-app.post('/api/upload', async (req, res) => {
-  console.log('=== UPLOAD REQUEST ===');
-  const { image, mimeType } = req.body;
+// Accept both JSON and FormData
+app.post('/api/upload', upload.none(), async (req, res) => {
+  console.log('=== UPLOAD ===');
+  console.log('Content-Type:', req.get('content-type'));
+  console.log('Body keys:', Object.keys(req.body));
+  console.log('Files:', req.files ? req.files.length : 0);
   
-  if (!image) {
-    console.log('ERROR: No image');
-    return res.status(400).json({ error: 'No image provided' });
+  let image, mimeType;
+  
+  // Case 1: JSON body (from fetch with JSON.stringify)
+  if (req.body.image) {
+    image = req.body.image;
+    mimeType = req.body.mimeType || 'image/jpeg';
+    console.log('Got JSON data, length:', image.length);
+  }
+  // Case 2: FormData (from form upload)
+  else if (req.files && req.files.length > 0) {
+    const file = req.files[0];
+    if (file.fieldname === 'image') {
+      image = file.buffer.toString('base64');
+      mimeType = file.mimetype || 'image/jpeg';
+      console.log('Got FormData file, length:', image.length);
+    }
   }
   
-  console.log('Image length:', image.length);
+  if (!image) {
+    console.log('ERROR: No image found');
+    console.log('Body:', JSON.stringify(req.body).substring(0, 500));
+    return res.status(400).json({ error: 'No image provided' });
+  }
   
   try {
     const apiKey = process.env.OPENROUTER_API_KEY;
@@ -58,8 +84,8 @@ app.post('/api/upload', async (req, res) => {
         messages: [{
           role: 'user',
           content: [
-            { type: 'text', text: 'Extract these fields from the contract: Owner (property owner name), Address (property address), Phone, Email, Total Cost, Contract Date, Shingle Manufacturer, Shingle Type. Format each as "Field: Value"' },
-            { type: 'image_url', image_url: { url: `data:${mimeType || 'image/jpeg'};base64,${image}` } }
+            { type: 'text', text: 'Extract: Owner, Address, Phone, Email, Total Cost, Date, Shingle info. Format: Field: Value' },
+            { type: 'image_url', image_url: { url: `data:${mimeType};base64,${image}` } }
           ]
         }],
         max_tokens: 1500
@@ -68,33 +94,28 @@ app.post('/api/upload', async (req, res) => {
     
     const data = await response.json();
     const text = data.choices[0]?.message?.content || '';
-    console.log('AI result:', text.substring(0, 200));
+    console.log('AI result:', text.substring(0, 100));
     
-    // Parse result
     const field = (name) => { const m = text.match(new RegExp(`(?:Field:\\s*)?${name}:?\\s*([^\\n]+)`, 'i')); return m ? m[1].trim() : ''; };
     const amounts = text.match(/\$[\d,]+\.?\d{0,2}/g) || [];
     
     const jobData = {
       owner: field('Owner') || 'Unknown',
-      address: field('Address') || field('Property') || '',
+      address: field('Address') || '',
       phone: field('Phone') || '',
       email: field('Email') || '',
       totalCost: amounts[0]?.replace(/[$,]/g, '') || '0',
       balanceDue: amounts[0]?.replace(/[$,]/g, '') || '0',
-      tooP: amounts[1]?.replace(/[$,]/g, '') || field('Deductible') || field('Insurance') || '0',
+      tooP: amounts[1]?.replace(/[$,]/g, '') || field('Deductible') || '0',
       date: field('Date') || field('Contract Date') || '',
-      manufacturer: field('Manufacturer') || field('Shingle Manufacturer') || '',
-      shingleType: field('Type') || field('Shingle Type') || ''
+      manufacturer: field('Manufacturer') || '',
+      shingleType: field('Type') || ''
     };
     
-    console.log('Parsed:', JSON.stringify(jobData));
-    
-    if (!jobData.owner || jobData.owner === 'Unknown' || jobData.owner.length < 3) {
-      console.log('ERROR: Could not extract valid data');
-      return res.status(400).json({ error: 'Could not read this contract. Please enter manually using Edit Records.' });
+    if (!jobData.owner || jobData.owner === 'Unknown') {
+      return res.status(400).json({ error: 'Could not read contract. Enter manually.' });
     }
     
-    // Determine month
     const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     let month = 'April';
     for (let i = 0; i < months.length; i++) if (jobData.date.toLowerCase().includes(months[i].toLowerCase())) month = months[i];
@@ -108,7 +129,7 @@ app.post('/api/upload', async (req, res) => {
     
     await sheets.spreadsheets.values.update({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A${nextRow}:Z${nextRow}`, valueInputOption: 'USER_ENTERED', requestBody: { values: [rowData] } });
     
-    console.log('SAVED to', month, 'row', nextRow);
+    console.log('SAVED to', month);
     res.json({ success: true, month, owner: jobData.owner });
   } catch (err) {
     console.error('ERROR:', err);
@@ -116,4 +137,4 @@ app.post('/api/upload', async (req, res) => {
   }
 });
 
-app.listen(process.env.PORT || 3000, () => console.log('App running on port', process.env.PORT || 3000));
+app.listen(process.env.PORT || 3000, () => console.log('App running'));
