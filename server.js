@@ -31,14 +31,12 @@ app.get('/api/jobs', async (req, res) => {
 
 app.post('/api/upload', upload.any(), async (req, res) => {
   console.log('=== UPLOAD ===');
-  console.log('Files count:', req.files?.length || 0);
-  console.log('File fields:', req.files?.map(f => f.fieldname));
+  console.log('Files:', req.files?.map(f => ({ field: f.fieldname, size: f.size })));
   
   if (!req.files || req.files.length === 0) {
-    return res.status(400).json({ error: 'No file uploaded' });
+    return res.status(400).json({ error: 'No file' });
   }
   
-  // Get the first file (the image)
   const file = req.files[0];
   const image = file.buffer.toString('base64');
   const mimeType = file.mimetype || 'image/jpeg';
@@ -66,7 +64,7 @@ app.post('/api/upload', upload.any(), async (req, res) => {
     
     const data = await response.json();
     const text = data.choices[0]?.message?.content || '';
-    console.log('AI result:', text.substring(0, 100));
+    console.log('AI:', text.substring(0, 100));
     
     const field = (n) => { const m = text.match(new RegExp(`(?:Field:\\s*)?${n}:?\\s*([^\\n]+)`, 'i')); return m ? m[1].trim() : ''; };
     const amounts = text.match(/\$[\d,]+\.?\d{0,2}/g) || [];
@@ -83,7 +81,7 @@ app.post('/api/upload', upload.any(), async (req, res) => {
     };
     
     if (!job.owner || job.owner === 'Unknown') {
-      return res.status(400).json({ error: 'Could not read contract' });
+      return res.status(400).json({ error: 'Could not read - enter manually' });
     }
     
     const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -99,7 +97,6 @@ app.post('/api/upload', upload.any(), async (req, res) => {
     
     res.json({ success: true, month, owner: job.owner });
   } catch (err) {
-    console.error('Error:', err);
     res.status(500).json({ error: err.message });
   }
 });

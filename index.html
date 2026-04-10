@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Yellow Hammer Properties</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
     body { font-family: 'Inter', sans-serif; }
     .btn-primary { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
@@ -23,12 +22,12 @@
 
     <div id="menu" class="grid gap-4">
       <button onclick="document.getElementById('file-input').click()" class="btn-primary w-full py-6 px-6 rounded-xl text-white font-semibold text-lg">
-        Upload Contract
+        📸 Upload Contract Photo
       </button>
-      <input type="file" id="file-input" accept=".pdf,.jpg,.jpeg,.png" class="hidden" onchange="handleFile(event)">
+      <input type="file" id="file-input" accept="image/*" class="hidden" onchange="handleFile(event)">
       
       <button onclick="showJobs()" class="btn-secondary w-full py-6 px-6 rounded-xl text-white font-semibold text-lg">
-        Edit Records
+        📋 Edit Records
       </button>
     </div>
 
@@ -41,10 +40,14 @@
     <div id="progress" class="hidden mt-4">
       <p class="text-amber-500 text-center" id="progress-text">Processing...</p>
     </div>
+
+    <div class="mt-8 p-4 bg-gray-800 rounded-lg">
+      <p class="text-amber-500 font-semibold">📷 Instructions:</p>
+      <p class="text-gray-400 text-sm mt-2">Take a clear photo of the contract and upload it. The AI will automatically read the details.</p>
+    </div>
   </div>
 
   <script>
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     const API = window.location.origin;
 
     function showStatus(msg, err) {
@@ -77,39 +80,21 @@
       showProgress(true, 'Processing...');
       
       try {
-        // Convert file to base64 image
-        let base64, type;
-        
-        if (file.name.toLowerCase().endsWith('.pdf')) {
-          // PDF -> convert to image
-          const buffer = await file.arrayBuffer();
-          const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-          const page = await pdf.getPage(1);
-          const viewport = page.getViewport({ scale: 2.0 });
-          
-          const canvas = document.createElement('canvas');
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-          
-          base64 = canvas.toDataURL('image/jpeg').split(',')[1];
-          type = 'image/jpeg';
-        } else {
-          // Image -> just use it
-          base64 = await new Promise(r => {
-            const reader = new FileReader();
-            reader.onload = () => r(reader.result.split(',')[1]);
-            reader.readAsDataURL(file);
-          });
-          type = file.type || 'image/jpeg';
-        }
+        // Read file as base64
+        const base64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result.split(',')[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
 
-        console.log('File converted, size:', base64.length);
+        const type = file.type || 'image/jpeg';
+        console.log('File size:', base64.length);
 
-        // Send as simple form data
+        // Send to server
         const formData = new FormData();
-        formData.append('image', base64);
-        formData.append('type', type);
+        formData.append('file', base64);
+        formData.append('mime', type);
 
         const response = await fetch(API + '/api/upload', {
           method: 'POST',
@@ -125,7 +110,6 @@
           showStatus(result.error || 'Error', true);
         }
       } catch (err) {
-        console.error(err);
         showStatus('Error: ' + err.message, true);
       }
 
