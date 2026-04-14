@@ -673,6 +673,14 @@ function showConfirmDialog(data) {
       showMenu();
     }
 
+    function processSelectedFile() {
+      const fileInput = document.getElementById("file-input");
+      const file = fileInput.files[0];
+      if (!file) { alert("No file selected"); return; }
+      alert("Processing: " + file.name);
+      handleFile({target: fileInput});
+    }
+
     async function handleFile(event) {
       const file = event.target.files[0];
       if (!file) return;
