@@ -150,7 +150,7 @@ app.post('/api/upload-json', async (req, res) => {
     const rowData = [
       job.address, '', job.contractDate, '', '', job.owner, job.totalCost, '0', '0', '0', job.totalCost, job.toooP, '0', '0', '', 
       '', job.phone, job.email, '', job.dripEdgeColor, job.ventilationColor, job.manufacturer, job.shingleType, job.shingleColor, '', job.notes,
-      '', '', '', '', '', ''
+      '', '', '', '', ''
     ];
     
     const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A:AE` });
