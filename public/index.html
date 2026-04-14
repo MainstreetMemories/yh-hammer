@@ -353,7 +353,7 @@ window.onload = function() {
   if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
 };
 
-    document.getElementBy('file-input').addEventListener('change', function(e) { alert('EVENT TRIGGERED - File: ' + (e.target.files[0] ? e.target.files[0].name : 'none') + ' - calling handleFile');
+    document.getElementById('file-input').addEventListener('change', function(e) { alert('EVENT TRIGGERED - File: ' + (e.target.files[0] ? e.target.files[0].name : 'none') + ' - calling handleFile');
       console.log('File input changed', e.target.files);
       if (e.target.files.length > 0) {
         handleFile({target: e.target});
@@ -381,7 +381,7 @@ window.onload = function() {
   if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
 };
 
-    document.getElementBy('file-input').click();
+    document.getElementById('file-input').click();
     });
     
     // When file is selected via the hidden input, process it
@@ -394,7 +394,7 @@ window.onload = function() {
   if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
 };
 
-    document.getElementBy('file-input').addEventListener('change', function(e) { alert('EVENT TRIGGERED - File: ' + (e.target.files[0] ? e.target.files[0].name : 'none') + ' - calling handleFile');
+    document.getElementById('file-input').addEventListener('change', function(e) { alert('EVENT TRIGGERED - File: ' + (e.target.files[0] ? e.target.files[0].name : 'none') + ' - calling handleFile');
       if (e.target.files.length > 0) {
         // File selected - manually trigger the handler
         var event = {target: e.target};
