@@ -675,65 +675,75 @@ function showConfirmDialog(data) {
 
     async function handleFile(event) {
       const file = event.target.files[0];
-      if (!file) { alert('No file selected'); return; }
+      if (!file) return;
       
-      alert('Step 1: File selected: ' + file.name);
-      showProgress(true, 'Reading contract...');
+      document.getElementById('progress').className = 'mt-6';
+      document.getElementById('progress-text').textContent = 'Reading...';
       
-      try {
-        alert('Step 2: Reading file...');
-        let imageData;
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      
+      reader.onload = async function() {
+        const imageData = reader.result.split(',')[1];
+        document.getElementById('progress-text').textContent = 'Processing...';
         
-        if (isPdfFile(file)) {
-          showProgress(true, 'Converting PDF to image...');
-          imageData = (await convertPdfToImages(file)).join('||PAGE||');
-        } else {
-          imageData = await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result.split(',')[1]);
-            reader.onerror = (e) => alert('FileReader error: ' + e);
-            reader.readAsDataURL(file);
-          });
-        }
-        
-        alert('Step 3: File read, sending to API... Length: ' + imageData.length);
-
-        showProgress(true, 'Extracting data...');
-      alert("Step 3.5: About to fetch API...");
-      
-      try {
         const response = await fetch(API + '/api/upload-json', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ file: imageData, isPdf: isPdfFile(file), preview: true })
+          body: JSON.stringify({ file: imageData, isPdf: false })
         });
-        alert("Step 3.6: Response status: " + response.status);
         
         const result = await response.json();
-        alert("Step 3.7: Got JSON result");
-
-        alert('Step 4: Got response: ' + JSON.stringify(result));
-        console.log('Upload result:', result); // Debug log
+        document.getElementById('progress').className = 'hidden';
         
-        if (result.error) {
-          showStatus(result.error || 'Error extracting data', true);
-          showProgress(false);
-        } else if (result.success && result.previewData) {
-          showProgress(false);
+        if (result.success && result.previewData) {
           pendingData = result.previewData;
-          showConfirmDialog(result.previewData);
-        } else if (result.success) {
-          // Success but no preview - this is the bug! Show an error
-          showStatus('Could not extract data from image. Try a clearer photo.', true);
-          showProgress(false);
+          // Build preview
+          let html = '<div class="glass rounded-xl p-6 mb-4">';
+          html += '<h3 class="text-yellow-500 font-bold text-xl mb-4">Confirm Data</h3>';
+          ['owner','address','phone','email','totalCost','toooP','contractDate','manufacturer','shingleType','shingleColor'].forEach(f => {
+            if (result.previewData[f]) {
+              html += '<div class="mb-2"><label class="text-gray-400">' + f + ':</label><input id="confirm-' + f + '" value="' + result.previewData[f] + '" class="w-full bg-gray-800 text-white px-2 py-1 rounded"></div>';
+            }
+          });
+          html += '<button onclick="confirmAndSave()" class="btn-primary w-full py-3 mt-4 rounded-xl">Save to Spreadsheet</button>';
+          html += '<button onclick="location.reload()" class="btn-secondary w-full py-2 mt-2 rounded-xl">Cancel</button>';
+          html += '</div>';
+          
+          document.getElementById('menu').innerHTML = html;
+        } else {
+          alert('Error: ' + (result.error || 'Could not extract'));
         }
-      } catch (err) {
-        console.error('Upload error:', err);
-        showStatus('Error: ' + err.message, true);
-        showProgress(false);
-      }
-
+      };
+      
       event.target.value = '';
+    }
+
+    async function confirmAndSave() {
+      if (!pendingData) return;
+      // Update with edited values
+      ['owner','address','phone','email','totalCost','toooP','contractDate','manufacturer','shingleType','shingleColor'].forEach(f => {
+        const el = document.getElementById('confirm-' + f);
+        if (el) pendingData[f] = el.value;
+      });
+      
+      pendingData.month = 'April';
+      pendingData.row = 999;
+      
+      const response = await fetch(API + '/api/save-confirmed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pendingData)
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        alert('Saved!');
+        location.reload();
+      } else {
+        alert('Error: ' + result.error);
+      }
+    }
     }
   </script>
 </body>
