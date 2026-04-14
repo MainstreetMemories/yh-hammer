@@ -27,7 +27,6 @@ app.use(express.json());
 function isValidJob(job) {
   const addr = (job[0] || '').toString().toLowerCase();
   const owner = (job[5] || '').toString().toLowerCase();
-  // Skip empty rows or header rows
   if (!addr || !owner) return false;
   if (addr === 'address' || owner === 'owner') return false;
   return true;
@@ -41,7 +40,6 @@ app.get('/api/jobs', async (req, res) => {
     const allJobs = {};
     for (const month of months) {
       const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A:AE` });
-      // Filter out header rows and empty rows
       const validJobs = (r.data.values || []).filter(isValidJob);
       allJobs[month] = validJobs.map((job, idx) => ({ row: idx + 4, address: job[0] || '', owner: job[5] || '', phone: job[15] || '', email: job[16] || '', totalCost: job[6] || '', tooop: job[11] || '' }));
     }
@@ -54,26 +52,35 @@ app.get('/api/jobs', async (req, res) => {
 
 // Get single job
 app.get('/api/get-job', async (req, res) => {
-  const { month, row } = req.query;
-  const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A${row}:AE${row}` });
-  const data = r.data.values?.[0] || [];
-  res.json({
-    address: data[0] || '', certOfComp: data[1] || '', contractDate: data[2] || '', estimateDate: data[3] || '', installDate: data[4] || '',
-    owner: data[5] || '', totalCost: data[6] || '', requiredDownPayment: data[7] || '', financeAmount: data[8] || '', additionalExpense: data[9] || '',
-    totalBalanceDue: data[10] || '', toooP: data[11] || '', depAmtHeld: data[12] || '', amountDue: data[13] || '', pmntMethod: data[14] || '',
-    datePaid: data[16] || '', checkNum: data[17] || '', amountPaid: data[18] || '', dripEdgeColor: data[19] || '', ventilationColor: data[20] || '',
-    manufacturer: data[21] || '', shingleType: data[22] || '', shingleColor: data[23] || '', estimatedSquares: data[24] || '', notes: data[25] || ''
-  });
+  try {
+    const { month, row } = req.query;
+    if (!month || !row) return res.status(400).json({ error: 'Missing month or row' });
+    const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A${row}:AE${row}` });
+    const data = r.data.values?.[0] || [];
+    res.json({
+      address: data[0] || '', certOfComp: data[1] || '', contractDate: data[2] || '', estimateDate: data[3] || '', installDate: data[4] || '',
+      owner: data[5] || '', totalCost: data[6] || '', requiredDownPayment: data[7] || '', financeAmount: data[8] || '', additionalExpense: data[9] || '',
+      totalBalanceDue: data[10] || '', toooP: data[11] || '', depAmtHeld: data[12] || '', amountDue: data[13] || '', pmntMethod: data[14] || '',
+      datePaid: data[16] || '', checkNum: data[17] || '', amountPaid: data[18] || '', dripEdgeColor: data[19] || '', ventilationColor: data[20] || '',
+      manufacturer: data[21] || '', shingleType: data[22] || '', shingleColor: data[23] || '', estimatedSquares: data[24] || '', notes: data[25] || ''
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Upload contract
-app.post('/api/upload-json', upload.single('file'), async (req, res) => {
-  if (!req.body.file) return res.status(400).json({ error: 'No file' });
-  
+app.post('/api/upload-json', async (req, res) => {
   try {
     const apiKey = process.env.OPENROUTER_API_KEY;
-    const image = req.body.file;
-    const isPdf = req.body.isPdf;
+    
+    // Check API key first
+    if (!apiKey) {
+      return res.status(500).json({ error: 'OPENROUTER_API_KEY not configured. Add it in Render environment variables.' });
+    }
+    
+    const { file, isPdf } = req.body;
+    if (!file) return res.status(400).json({ error: 'No file provided' });
     
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -82,14 +89,31 @@ app.post('/api/upload-json', upload.single('file'), async (req, res) => {
         model: 'anthropic/claude-3-haiku',
         messages: [{ role: 'user', content: [
           { type: 'text', text: 'Extract: Owner, Address (street city state zip), Phone, Email, Total Cost, T.O.O.P, Contract Date, Manufacturer, Shingle Type, Shingle Color, Ventilation Color, Drip Edge Color, Notes. Format: Field: Value' },
-          { type: 'image_url', image_url: { url: isPdf ? `data:image/png;base64,${image.split('||PAGE||')[0]}` : `data:image/jpeg;base64,${image}` } }
+          { type: 'image_url', image_url: { url: isPdf ? `data:image/png;base64,${file.split('||PAGE||')[0]}` : `data:image/jpeg;base64,${file}` } }
         ]}],
         max_tokens: 1500
       })
     });
     
+    // Check for HTTP errors
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('OpenRouter error:', response.status, errorText);
+      return res.status(500).json({ error: `AI service error: ${response.status}` });
+    }
+    
     const data = await response.json();
-    const text = data.choices[0]?.message?.content || '';
+    
+    // Check for API-level errors
+    if (data.error) {
+      return res.status(500).json({ error: data.error.message || 'AI extraction failed' });
+    }
+    
+    const text = data.choices?.[0]?.message?.content || '';
+    
+    if (!text) {
+      return res.status(400).json({ error: 'Could not extract data from image - try again with clearer photo' });
+    }
     
     const field = (n) => { const m = text.match(new RegExp(`(?:Field:\\s*)?${n}:\\s*(.+)`, 'i')); return m ? m[1].trim() : '' };
     const amounts = text.match(/\$[\d,]+(?:\.\d{2})?/g) || [];
@@ -127,24 +151,53 @@ app.post('/api/upload-json', upload.single('file'), async (req, res) => {
     
     res.json({ success: true, month, owner: job.owner, previewData: job });
   } catch (err) {
+    console.error('Upload error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// Save confirmed job
+// Save confirmed job (edit form)
 app.post('/api/save-confirmed', async (req, res) => {
-  const { month, row, ...data } = req.body;
-  res.json({ success: true, month: month || 'April' });
+  try {
+    const { month, row, ...data } = req.body;
+    if (!month || !row) return res.status(400).json({ error: 'Missing month or row' });
+    
+    // Build row data from all fields (A through AE = columns 0-30)
+    const rowData = [
+      data.address || '', data.certOfComp || '', data.contractDate || '', data.estimateDate || '', data.installDate || '',
+      data.owner || '', data.totalCost || '', data.requiredDownPayment || '', data.financeAmount || '', data.additionalExpense || '',
+      data.totalBalanceDue || '', data.toooP || '', data.depAmtHeld || '', data.amountDue || '', data.pmntMethod || '',
+      '', data.datePaid || '', data.checkNum || '', data.amountPaid || '', data.dripEdgeColor || '', data.ventilationColor || '',
+      data.manufacturer || '', data.shingleType || '', data.shingleColor || '', data.estimatedSquares || '', data.notes || '',
+      '', '', '', '', '', ''
+    ];
+    
+    await sheets.spreadsheets.values.update({ 
+      spreadsheetId: SPREADSHEET_ID, 
+      range: `${month}!A${row}:AE${row}`, 
+      valueInputOption: 'USER_ENTERED', 
+      requestBody: { values: [rowData] } 
+    });
+    
+    res.json({ success: true, month });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// Add estimate
+// Add estimate (batch update)
 app.post('/api/save-estimate', async (req, res) => {
-  const { month, row, estimateDate, permitCost, primaryContractor, paid } = req.body;
   try {
-    await sheets.spreadsheets.values.update({ spreadsheetId: SPREADSHEET_ID, range: `${month}!D${row}`, valueInputOption: 'USER_ENTERED', requestBody: { values: [[estimateDate]] } });
-    await sheets.spreadsheets.values.update({ spreadsheetId: SPREADSHEET_ID, range: `${month}!Y${row}`, valueInputOption: 'USER_ENTERED', requestBody: { values: [[permitCost]] } });
-    await sheets.spreadsheets.values.update({ spreadsheetId: SPREADSHEET_ID, range: `${month}!AC${row}`, valueInputOption: 'USER_ENTERED', requestBody: { values: [[primaryContractor]] } });
-    await sheets.spreadsheets.values.update({ spreadsheetId: SPREADSHEET_ID, range: `${month}!AE${row}`, valueInputOption: 'USER_ENTERED', requestBody: { values: [[paid]] } });
+    const { month, row, estimateDate, permitCost, primaryContractor, paid } = req.body;
+    if (!month || !row) return res.status(400).json({ error: 'Missing month or row' });
+    
+    // Single batched update for all fields
+    await sheets.spreadsheets.values.update({ 
+      spreadsheetId: SPREADSHEET_ID, 
+      range: `${month}!D${row}:AE${row}`, 
+      valueInputOption: 'USER_ENTERED', 
+      requestBody: { values: [[estimateDate || '', permitCost || '', primaryContractor || '', paid || '']] }
+    });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -153,8 +206,9 @@ app.post('/api/save-estimate', async (req, res) => {
 
 // Add install date
 app.post('/api/save-install', async (req, res) => {
-  const { month, row, installDate } = req.body;
   try {
+    const { month, row, installDate } = req.body;
+    if (!month || !row) return res.status(400).json({ error: 'Missing month or row' });
     await sheets.spreadsheets.values.update({ spreadsheetId: SPREADSHEET_ID, range: `${month}!E${row}`, valueInputOption: 'USER_ENTERED', requestBody: { values: [[installDate]] } });
     res.json({ success: true });
   } catch (err) {
@@ -164,9 +218,9 @@ app.post('/api/save-install', async (req, res) => {
 
 // Request estimate - send GroupMe notification
 app.post('/api/request-estimate', async (req, res) => {
-  const { month, address, owner } = req.body;
-  const botId = 'a36a8a2e2fc7ad27ece3f21843';
-  const text = `ESTIMATE NEEDED\n${owner}\n${address}`;
+  const { address, owner } = req.body;
+  const botId = process.env.GROUPME_BOT_ID || 'a36a8a2e2fc7ad27ece3f21843';
+  const text = `ESTIMATE NEEDED\n${owner || 'Unknown'}\n${address || 'Unknown'}`;
   
   try {
     await fetch('https://api.groupme.com/v3/bots/post', {
