@@ -125,7 +125,7 @@
     const API = window.location.origin;
 
     // Fix: Ensure file input change is detected
-    document.getElementById('file-input').addEventListener('change', function(e) { alert('EVENT TRIGGERED - File: ' + (e.target.files[0] ? e.target.files[0].name : 'none'));
+    document.getElementById('file-input').addEventListener('change', function(e) { alert('EVENT TRIGGERED - File: ' + (e.target.files[0] ? e.target.files[0].name : 'none') + ' - calling handleFile');
       console.log('File input changed', e.target.files);
       if (e.target.files.length > 0) {
         handleFile({target: e.target});
@@ -139,7 +139,7 @@
     });
     
     // When file is selected via the hidden input, process it
-    document.getElementById('file-input').addEventListener('change', function(e) { alert('EVENT TRIGGERED - File: ' + (e.target.files[0] ? e.target.files[0].name : 'none'));
+    document.getElementById('file-input').addEventListener('change', function(e) { alert('EVENT TRIGGERED - File: ' + (e.target.files[0] ? e.target.files[0].name : 'none') + ' - calling handleFile');
       if (e.target.files.length > 0) {
         // File selected - manually trigger the handler
         var event = {target: e.target};
@@ -705,7 +705,7 @@ function showConfirmDialog(data) {
       handleFile({target: fileInput});
     }
 
-    async function handleFile(event) {
+    async function handleFile(event) { alert('handleFile STARTED');
       const file = event.target.files[0];
       if (!file) { alert('No file'); return; }
       
@@ -713,7 +713,7 @@ function showConfirmDialog(data) {
       document.getElementById('progress-text').textContent = 'Reading...';
       alert('Starting file read...');
       
-      const reader = new FileReader();
+      const reader = new FileReader(); alert('Creating FileReader...');
       reader.readAsDataURL(file);
       
       reader.onload = async function() {
