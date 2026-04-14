@@ -23,6 +23,16 @@ const upload = multer({ storage: multer.memoryStorage() });
 app.use(express.static('public'));
 app.use(express.json());
 
+// Helper: check if row is a header or empty
+function isValidJob(job) {
+  const addr = (job[0] || '').toString().toLowerCase();
+  const owner = (job[5] || '').toString().toLowerCase();
+  // Skip empty rows or header rows
+  if (!addr || !owner) return false;
+  if (addr === 'address' || owner === 'owner') return false;
+  return true;
+}
+
 // Get all jobs grouped by month
 app.get('/api/jobs', async (req, res) => {
   try {
@@ -31,7 +41,9 @@ app.get('/api/jobs', async (req, res) => {
     const allJobs = {};
     for (const month of months) {
       const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A:AE` });
-      allJobs[month] = (r.data.values || []).map((job, idx) => ({ row: idx + 4, address: job[0] || '', owner: job[5] || '', phone: job[15] || '', email: job[16] || '', totalCost: job[6] || '', tooop: job[11] || '' }));
+      // Filter out header rows and empty rows
+      const validJobs = (r.data.values || []).filter(isValidJob);
+      allJobs[month] = validJobs.map((job, idx) => ({ row: idx + 4, address: job[0] || '', owner: job[5] || '', phone: job[15] || '', email: job[16] || '', totalCost: job[6] || '', tooop: job[11] || '' }));
     }
     res.json(allJobs);
   } catch (err) {
