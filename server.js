@@ -21,7 +21,7 @@ const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
 
 app.use(express.static('public'));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 // Helper: check if row is a header or empty
 function isValidJob(job) {
