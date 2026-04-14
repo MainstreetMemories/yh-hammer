@@ -182,6 +182,10 @@
         <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 drop-shadow-lg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0016.07 6H17a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
         <span class="relative z-10">Upload Contract</span>
       </button>
+      </button>
+      <button id="new-upload-btn" onclick="handleNewUpload()" class="btn-green w-full py-3 rounded-xl font-bold text-white mt-2">
+        📤 Upload Contract (New)
+      </button>
       <input type="file" id="file-input" accept="image/*,.pdf" onchange="alert('onchange fired!'); handleFile(event);" style="border:3px solid red;padding:10px;">
       
       <button onclick="showRequestEstimateModal()" class="btn-yellow group relative overflow-hidden py-7 px-5 rounded-3xl text-white font-bold text-xl shadow-2xl flex items-center justify-center gap-4">
@@ -917,5 +921,45 @@ function showConfirmDialog(data) {
       document.getElementById('menu').innerHTML = html;
     }
 </script>
+
+    <script>
+    function handleNewUpload() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*,.pdf';
+      input.onchange = async function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        alert('Selected: ' + file.name);
+        let imageData;
+        if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+          alert('Converting PDF...');
+          const images = await convertPdfToImages(file);
+          imageData = images.join('||PAGE||');
+        } else {
+          alert('Reading image...');
+          imageData = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+        }
+        alert('Sending to AI...');
+        const response = await fetch(API + '/api/upload-json', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ file: imageData, isPdf: file.type === 'application/pdf' })
+        });
+        const result = await response.json();
+        if (result.success && result.previewData) {
+          alert('Success!');
+        } else {
+          alert('Error: ' + (result.error || 'Failed'));
+        }
+      };
+      input.click();
+    }
+    </script>
 </body>
 </html>
