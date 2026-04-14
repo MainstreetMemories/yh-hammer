@@ -72,7 +72,7 @@ app.get('/api/get-job', async (req, res) => {
 // Upload contract
 app.post('/api/upload-json', async (req, res) => {
   try {
-    const apiKey = process.env.OPENROUTER_API_KEY;
+    const apiKey = process.env.OPENROUTER_API_KEY || process.env.openrouter_api_key;
     
     // Check API key first
     if (!apiKey) {
