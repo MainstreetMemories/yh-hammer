@@ -13,23 +13,19 @@
       input.onchange = async function(e) {
         const file = e.target.files[0];
         if (!file) return;
-        
-        alert('Selected: ' + file.name);
-        
-        let imageData;
+let imageData;
         if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
-          const images = await convertPdfToImages(file);
+const images = await convertPdfToImages(file);
           imageData = images.join('||PAGE||');
         } else {
-          imageData = await new Promise((resolve, reject) => {
+imageData = await new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = () => resolve(reader.result.split(',')[1]);
             reader.onerror = reject;
             reader.readAsDataURL(file);
           });
         }
-        
-        const response = await fetch(API + '/api/upload-json', {
+const response = await fetch(API + '/api/upload-json', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ file: imageData, isPdf: file.type === 'application/pdf' })
@@ -38,7 +34,7 @@
         const result = await response.json();
         
         if (result.success) {
-          alert('✅ Contract saved to ' + result.month + ' for ' + (result.owner || 'job'));
+          alert('✅ SUCCESS! Contract saved to ' + (result.month || 'sheet'));
           location.reload();
         } else {
           alert('Error: ' + (result.error || 'Failed'));
@@ -67,23 +63,19 @@
       input.onchange = async function(e) {
         const file = e.target.files[0];
         if (!file) return;
-        
-        alert('Selected: ' + file.name);
-        
-        let imageData;
+let imageData;
         if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
-          const images = await convertPdfToImages(file);
+const images = await convertPdfToImages(file);
           imageData = images.join('||PAGE||');
         } else {
-          imageData = await new Promise((resolve, reject) => {
+imageData = await new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = () => resolve(reader.result.split(',')[1]);
             reader.onerror = reject;
             reader.readAsDataURL(file);
           });
         }
-        
-        const response = await fetch(API + '/api/upload-json', {
+const response = await fetch(API + '/api/upload-json', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ file: imageData, isPdf: file.type === 'application/pdf' })
@@ -92,7 +84,7 @@
         const result = await response.json();
         
         if (result.success) {
-          alert('✅ Contract saved to ' + result.month + ' for ' + (result.owner || 'job'));
+          alert('✅ SUCCESS! Contract saved to ' + (result.month || 'sheet'));
           location.reload();
         } else {
           alert('Error: ' + (result.error || 'Failed'));
@@ -178,7 +170,8 @@
       <button id="new-upload-btn" onclick="handleNewUpload()" class="btn-green w-full py-3 rounded-xl font-bold text-white mt-2">
         📤 Upload Contract (New)
       </button>
-      <input type="file" id="file-input" accept="image/*,.pdf" onchange=" handleFile(event);" style="border:3px solid red;padding:10px;">
+      <input type="file" id="file-input" accept="image/*,.pdf" onchange="
+handleFile(event);" style="border:3px solid red;padding:10px;">
       
       <button onclick="showRequestEstimateModal()" class="btn-yellow group relative overflow-hidden py-7 px-5 rounded-3xl text-white font-bold text-xl shadow-2xl flex items-center justify-center gap-4">
         <div class="absolute inset-0 bg-white/10 group-hover:bg-white/20 transition-colors"></div>
@@ -354,7 +347,7 @@
       
       const months = Object.keys(window.jobs || {});
       if (months.length === 0) {
-        return;
+return;
       }
       
       let html = '<p class="text-gray-400 mb-2">Select Month:</p><div class="flex flex-wrap gap-2 mb-4">';
@@ -385,9 +378,8 @@
         body: JSON.stringify({ month, row })
       }).then(r => r.json()).then(data => {
         if (data.success) {
-        } else {
-          alert('Error: ' + data.error);
-        }
+} else {
+}
         showMenu();
       });
     }
@@ -403,7 +395,7 @@
       
       const months = Object.keys(window.jobs || {});
       if (months.length === 0) {
-        return;
+return;
       }
       
       // Show month selection
@@ -435,9 +427,8 @@
         body: JSON.stringify({ month, row })
       }).then(r => r.json()).then(data => {
         if (data.success) {
-        } else {
-          alert('Error: ' + data.error);
-        }
+} else {
+}
         showMenu();
       });
     }
@@ -452,7 +443,7 @@
       
       const months = Object.keys(window.jobs || {});
       if (months.length === 0) {
-        return;
+return;
       }
       
       let html = '<p class="text-gray-400 mb-2">Select Month:</p><div class="flex flex-wrap gap-2 mb-4">';
@@ -507,9 +498,8 @@
         body: JSON.stringify({ month: installSelectedJob.month, row: installSelectedJob.row, installDate })
       }).then(r => r.json()).then(data => {
         if (data.success) {
-        } else {
-          alert('Error: ' + data.error);
-        }
+} else {
+}
         showMenu();
       });
     }
@@ -575,11 +565,10 @@
         body: JSON.stringify({ month: estimateSelectedJob.month, row: estimateSelectedJob.row, estimateDate, squares, primaryContractor, paid })
       }).then(r => r.json()).then(data => {
         if (data.success) {
-          document.getElementById('estimate-dialog').classList.add('hidden');
+document.getElementById('estimate-dialog').classList.add('hidden');
           showMenu();
         } else {
-          alert('Error: ' + data.error);
-        }
+}
       });
     }
     
@@ -599,14 +588,14 @@
       
       const months = Object.keys(window.jobs || {});
       if (months.length === 0) {
-        return;
+return;
       }
       
       // Simple prompt for estimate info - can be expanded to full modal
       // placeholder to remove('Estimate Date (e.g., 4/13/2026):');
       const month = prompt('Which month is this job in? (' + months.join(', ') + ')');
       if (!month || !months.includes(month)) {
-        return;
+return;
       }
       
       const jobs = window.jobs[month];
@@ -616,7 +605,7 @@
       
       const jobIndex = parseInt(jobNum) - 1;
       if (jobIndex < 0 || jobIndex >= jobs.length) {
-        return;
+return;
       }
       
       const row = jobs[jobIndex].row;
@@ -628,10 +617,9 @@
         body: JSON.stringify({ month, row, estimateDate, squares, permitCost, primaryContractor, paid })
       }).then(r => r.json()).then(data => {
         if (data.success) {
-          showMenu();
+showMenu();
         } else {
-          alert('Error: ' + data.error);
-        }
+}
       });
     }
     
@@ -837,13 +825,11 @@ function showConfirmDialog(data) {
       
       const result = await response.json();
       if (result.success) {
-        location.reload();
+location.reload();
       } else {
-        alert('Error: ' + result.error);
-      }
+}
     }
     }
-  
 
     // New Upload Handler
     function handleNewUpload() {
@@ -853,23 +839,19 @@ function showConfirmDialog(data) {
       input.onchange = async function(e) {
         const file = e.target.files[0];
         if (!file) return;
-        
-        alert('Selected: ' + file.name);
-        
-        let imageData;
+let imageData;
         if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
-          const images = await convertPdfToImages(file);
+const images = await convertPdfToImages(file);
           imageData = images.join('||PAGE||');
         } else {
-          imageData = await new Promise((resolve, reject) => {
+imageData = await new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = () => resolve(reader.result.split(',')[1]);
             reader.onerror = reject;
             reader.readAsDataURL(file);
           });
         }
-        
-        const response = await fetch(API + '/api/upload-json', {
+const response = await fetch(API + '/api/upload-json', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ file: imageData, isPdf: file.type === 'application/pdf' })
@@ -878,7 +860,7 @@ function showConfirmDialog(data) {
         const result = await response.json();
         
         if (result.success) {
-          alert('✅ Contract saved to ' + result.month + ' for ' + (result.owner || 'job'));
+          alert('✅ SUCCESS! Contract saved to ' + (result.month || 'sheet'));
           location.reload();
         } else {
           alert('Error: ' + (result.error || 'Failed'));
@@ -906,27 +888,26 @@ function showConfirmDialog(data) {
       input.onchange = async function(e) {
         const file = e.target.files[0];
         if (!file) return;
-        alert('Selected: ' + file.name);
-        let imageData;
+let imageData;
         if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
-          const images = await convertPdfToImages(file);
+const images = await convertPdfToImages(file);
           imageData = images.join('||PAGE||');
         } else {
-          imageData = await new Promise((resolve, reject) => {
+imageData = await new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = () => resolve(reader.result.split(',')[1]);
             reader.onerror = reject;
             reader.readAsDataURL(file);
           });
         }
-        const response = await fetch(API + '/api/upload-json', {
+const response = await fetch(API + '/api/upload-json', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ file: imageData, isPdf: file.type === 'application/pdf' })
         });
         const result = await response.json();
         if (result.success) {
-          alert('✅ Contract saved to ' + result.month + ' for ' + (result.owner || 'job'));
+          alert('✅ SUCCESS! Contract saved to ' + (result.month || 'sheet'));
           location.reload();
         } else {
           alert('Error: ' + (result.error || 'Failed'));
