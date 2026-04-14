@@ -707,10 +707,11 @@ function showConfirmDialog(data) {
 
     async function handleFile(event) {
       const file = event.target.files[0];
-      if (!file) return;
+      if (!file) { alert('No file'); return; }
       
       document.getElementById('progress').className = 'mt-6';
       document.getElementById('progress-text').textContent = 'Reading...';
+      alert('Starting file read...');
       
       const reader = new FileReader();
       reader.readAsDataURL(file);
