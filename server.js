@@ -168,8 +168,7 @@ app.post('/api/save-confirmed', async (req, res) => {
       data.owner || '', data.totalCost || '', data.requiredDownPayment || '', data.financeAmount || '', data.additionalExpense || '',
       data.totalBalanceDue || '', data.toooP || '', data.depAmtHeld || '', data.amountDue || '', data.pmntMethod || '',
       '', data.datePaid || '', data.checkNum || '', data.amountPaid || '', data.dripEdgeColor || '', data.ventilationColor || '',
-      data.manufacturer || '', data.shingleType || '', data.shingleColor || '', data.estimatedSquares || '', data.notes || '',
-      '', '', '', '', '', ''
+      data.manufacturer || '', data.shingleType || '', data.shingleColor || '', data.estimatedSquares || '', data.notes || ''
     ];
     
     await sheets.spreadsheets.values.update({ 
