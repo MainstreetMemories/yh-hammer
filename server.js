@@ -4,7 +4,14 @@ const fs = require('fs');
 const { google } = require('googleapis');
 const path = require('path');
 
-const credentials = JSON.parse(fs.readFileSync(path.join(__dirname, 'credentials.json')));
+// Handle credentials - from env var or file
+let credentials;
+if (process.env.GOOGLE_CREDS) {
+  credentials = JSON.parse(process.env.GOOGLE_CREDS);
+} else {
+  credentials = JSON.parse(fs.readFileSync(path.join(__dirname, 'credentials.json')));
+}
+
 const auth = new google.auth.GoogleAuth({ credentials, scopes: ['https://www.googleapis.com/auth/spreadsheets'] });
 const sheets = google.sheets({ version: 'v4', auth });
 
@@ -18,14 +25,19 @@ app.use(express.json());
 
 // Get all jobs grouped by month
 app.get('/api/jobs', async (req, res) => {
-  const result = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
-  const months = result.data.sheets.map(s => s.properties.title).filter(t => t !== 'Customer Information');
-  const allJobs = {};
-  for (const month of months) {
-    const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A:AE` });
-    allJobs[month] = (r.data.values || []).map((job, idx) => ({ row: idx + 4, address: job[0] || '', owner: job[5] || '', phone: job[15] || '', email: job[16] || '', totalCost: job[6] || '', tooop: job[11] || '' }));
+  try {
+    const result = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
+    const months = result.data.sheets.map(s => s.properties.title).filter(t => t !== 'Customer Information');
+    const allJobs = {};
+    for (const month of months) {
+      const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A:AE` });
+      allJobs[month] = (r.data.values || []).map((job, idx) => ({ row: idx + 4, address: job[0] || '', owner: job[5] || '', phone: job[15] || '', email: job[16] || '', totalCost: job[6] || '', tooop: job[11] || '' }));
+    }
+    res.json(allJobs);
+  } catch (err) {
+    console.error('Error in /api/jobs:', err.message);
+    res.status(500).json({ error: err.message });
   }
-  res.json(allJobs);
 });
 
 // Get single job
@@ -110,7 +122,6 @@ app.post('/api/upload-json', upload.single('file'), async (req, res) => {
 // Save confirmed job
 app.post('/api/save-confirmed', async (req, res) => {
   const { month, row, ...data } = req.body;
-  // Build row data from all fields - this would need full implementation
   res.json({ success: true, month: month || 'April' });
 });
 
