@@ -41,9 +41,9 @@
         
         const result = await response.json();
         
-        if (result.success && result.previewData) {
-          alert('Success! Data extracted.');
-          showExtractedData(result.previewData);
+        if (result.success) {
+          alert('✅ SUCCESS! Contract saved to ' + (result.month || 'sheet'));
+          location.reload();
         } else {
           alert('Error: ' + (result.error || 'Failed'));
         }
@@ -99,9 +99,9 @@
         
         const result = await response.json();
         
-        if (result.success && result.previewData) {
-          alert('Success! Data extracted.');
-          showExtractedData(result.previewData);
+        if (result.success) {
+          alert('✅ SUCCESS! Contract saved to ' + (result.month || 'sheet'));
+          location.reload();
         } else {
           alert('Error: ' + (result.error || 'Failed'));
         }
@@ -901,9 +901,9 @@ function showConfirmDialog(data) {
         
         const result = await response.json();
         
-        if (result.success && result.previewData) {
-          alert('Success! Data extracted.');
-          showExtractedData(result.previewData);
+        if (result.success) {
+          alert('✅ SUCCESS! Contract saved to ' + (result.month || 'sheet'));
+          location.reload();
         } else {
           alert('Error: ' + (result.error || 'Failed'));
         }
@@ -952,8 +952,9 @@ function showConfirmDialog(data) {
           body: JSON.stringify({ file: imageData, isPdf: file.type === 'application/pdf' })
         });
         const result = await response.json();
-        if (result.success && result.previewData) {
-          alert('Success!');
+        if (result.success) {
+          alert('✅ SUCCESS! Contract saved to ' + (result.month || 'sheet'));
+          location.reload();
         } else {
           alert('Error: ' + (result.error || 'Failed'));
         }
