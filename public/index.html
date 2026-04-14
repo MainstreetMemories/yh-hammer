@@ -31,7 +31,7 @@
           });
         }
         
-        alert('Sending to AI...');
+        alert('Sending to AI...'); alert('API URL: ' + API + '/api/upload-json');
         
         const response = await fetch(API + '/api/upload-json', {
           method: 'POST',
@@ -39,9 +39,9 @@
           body: JSON.stringify({ file: imageData, isPdf: file.type === 'application/pdf' })
         });
         
-        const result = await response.json();
+        alert('Got response, status: ' + response.status); const result = await response.json(); alert('Result: ' + JSON.stringify(result).substring(0,200));
         
-        if (result.success && result.previewData) {
+        alert('Checking result...'); if (result.success && result.previewData) {
           alert('Success! Data extracted.');
           showExtractedData(result.previewData);
         } else {
@@ -89,7 +89,7 @@
           });
         }
         
-        alert('Sending to AI...');
+        alert('Sending to AI...'); alert('API URL: ' + API + '/api/upload-json');
         
         const response = await fetch(API + '/api/upload-json', {
           method: 'POST',
@@ -97,9 +97,9 @@
           body: JSON.stringify({ file: imageData, isPdf: file.type === 'application/pdf' })
         });
         
-        const result = await response.json();
+        alert('Got response, status: ' + response.status); const result = await response.json(); alert('Result: ' + JSON.stringify(result).substring(0,200));
         
-        if (result.success && result.previewData) {
+        alert('Checking result...'); if (result.success && result.previewData) {
           alert('Success! Data extracted.');
           showExtractedData(result.previewData);
         } else {
@@ -773,7 +773,7 @@ function showConfirmDialog(data) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(pendingData)
         });
-        const result = await response.json();
+        alert('Got response, status: ' + response.status); const result = await response.json(); alert('Result: ' + JSON.stringify(result).substring(0,200));
         if (result.success) {
           showStatus('✓ Contract saved to ' + result.month);
         } else {
@@ -811,10 +811,10 @@ function showConfirmDialog(data) {
           body: JSON.stringify({ file: imageData, isPdf: false })
         });
         
-        const result = await response.json();
+        alert('Got response, status: ' + response.status); const result = await response.json(); alert('Result: ' + JSON.stringify(result).substring(0,200));
         document.getElementById('progress').className = 'hidden';
         
-        if (result.success && result.previewData) {
+        alert('Checking result...'); if (result.success && result.previewData) {
           pendingData = result.previewData;
           // Build preview
           let html = '<div class="glass rounded-xl p-6 mb-4">';
@@ -854,7 +854,7 @@ function showConfirmDialog(data) {
         body: JSON.stringify(pendingData)
       });
       
-      const result = await response.json();
+      alert('Got response, status: ' + response.status); const result = await response.json(); alert('Result: ' + JSON.stringify(result).substring(0,200));
       if (result.success) {
         alert('Saved!');
         location.reload();
@@ -891,7 +891,7 @@ function showConfirmDialog(data) {
           });
         }
         
-        alert('Sending to AI...');
+        alert('Sending to AI...'); alert('API URL: ' + API + '/api/upload-json');
         
         const response = await fetch(API + '/api/upload-json', {
           method: 'POST',
@@ -899,9 +899,9 @@ function showConfirmDialog(data) {
           body: JSON.stringify({ file: imageData, isPdf: file.type === 'application/pdf' })
         });
         
-        const result = await response.json();
+        alert('Got response, status: ' + response.status); const result = await response.json(); alert('Result: ' + JSON.stringify(result).substring(0,200));
         
-        if (result.success && result.previewData) {
+        alert('Checking result...'); if (result.success && result.previewData) {
           alert('Success! Data extracted.');
           showExtractedData(result.previewData);
         } else {
@@ -945,14 +945,14 @@ function showConfirmDialog(data) {
             reader.readAsDataURL(file);
           });
         }
-        alert('Sending to AI...');
+        alert('Sending to AI...'); alert('API URL: ' + API + '/api/upload-json');
         const response = await fetch(API + '/api/upload-json', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ file: imageData, isPdf: file.type === 'application/pdf' })
         });
-        const result = await response.json();
-        if (result.success && result.previewData) {
+        alert('Got response, status: ' + response.status); const result = await response.json(); alert('Result: ' + JSON.stringify(result).substring(0,200));
+        alert('Checking result...'); if (result.success && result.previewData) {
           alert('Success!');
         } else {
           alert('Error: ' + (result.error || 'Failed'));
