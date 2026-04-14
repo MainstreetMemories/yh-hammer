@@ -9,11 +9,38 @@
     // NEW CLEAN UPLOAD CONTRACT FUNCTIONALITY
     // ========================================
     
-    document.getElementById('upload-contract-btn').addEventListener('click', function() {
-      document.getElementById('contract-file-input').click();
+// Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('upload-contract-btn').addEventListener('click', function() {
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('contract-file-input').click();
     });
     
-    document.getElementById('contract-file-input').addEventListener('change', async function(e) { try {
+// Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('contract-file-input').addEventListener('change', async function(e) {
       const file = e.target.files[0];
       if (!file) return;
       
@@ -62,7 +89,6 @@
       
       // Reset input
       e.target.value = '';
-      } catch(err) { alert('ERROR in change handler: ' + err.message); }}
     });
     
     function showExtractedData(data) {
@@ -80,7 +106,16 @@
       html += '<button onclick="location.reload()" class="btn-secondary w-full py-2 mt-2 rounded-xl">❌ Cancel</button>';
       html += '</div>';
       
-      document.getElementById('menu').innerHTML = html;
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('menu').innerHTML = html;
       pendingData = data;
     }
 
@@ -91,10 +126,28 @@
     // NEW CLEAN UPLOAD CONTRACT FUNCTIONALITY
     // ========================================
     
-      document.getElementById('contract-file-input').click();
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('contract-file-input').click();
     });
     
-    document.getElementById('contract-file-input').addEventListener('change', async function(e) { try {
+// Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('contract-file-input').addEventListener('change', async function(e) {
       const file = e.target.files[0];
       if (!file) return;
       
@@ -143,7 +196,6 @@
       
       // Reset input
       e.target.value = '';
-      } catch(err) { alert('ERROR in change handler: ' + err.message); }}
     });
     
     function showExtractedData(data) {
@@ -161,7 +213,16 @@
       html += '<button onclick="location.reload()" class="btn-secondary w-full py-2 mt-2 rounded-xl">❌ Cancel</button>';
       html += '</div>';
       
-      document.getElementById('menu').innerHTML = html;
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('menu').innerHTML = html;
       pendingData = data;
     }
 
@@ -224,7 +285,7 @@
     </div>
 
     <div id="menu" class="grid gap-5 mt-2">
-      <button id="upload-contract-btn" onclick="var f=document.getElementById('contract-file-input');alert('Click handler works');f.click();" class="btn-primary w-full py-4 rounded-xl text-white font-bold text-lg" style="cursor:pointer;">
+      <button id="upload-contract-btn" onclick="document.getElementById('contract-file-input').click()" class="btn-primary w-full py-4 rounded-xl text-white font-bold text-lg" style="cursor:pointer;">
   📤 Upload Contract
 </button>
 <input type="file" id="contract-file-input" accept="image/*,.pdf" class="hidden">
@@ -283,7 +344,16 @@
     const API = window.location.origin;
 
     // Fix: Ensure file input change is detected
-    document.getElementById('file-input').addEventListener('change', function(e) { alert('EVENT TRIGGERED - File: ' + (e.target.files[0] ? e.target.files[0].name : 'none') + ' - calling handleFile');
+// Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('file-input').addEventListener('change', function(e) { alert('EVENT TRIGGERED - File: ' + (e.target.files[0] ? e.target.files[0].name : 'none') + ' - calling handleFile');
       console.log('File input changed', e.target.files);
       if (e.target.files.length > 0) {
         handleFile({target: e.target});
@@ -292,12 +362,39 @@
 
 
     // Override upload button click to directly trigger file selection
-    document.getElementById('upload-btn').addEventListener('click', function() {
-      document.getElementById('file-input').click();
+// Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('upload-btn').addEventListener('click', function() {
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('file-input').click();
     });
     
     // When file is selected via the hidden input, process it
-    document.getElementById('file-input').addEventListener('change', function(e) { alert('EVENT TRIGGERED - File: ' + (e.target.files[0] ? e.target.files[0].name : 'none') + ' - calling handleFile');
+// Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('file-input').addEventListener('change', function(e) { alert('EVENT TRIGGERED - File: ' + (e.target.files[0] ? e.target.files[0].name : 'none') + ' - calling handleFile');
       if (e.target.files.length > 0) {
         // File selected - manually trigger the handler
         var event = {target: e.target};
@@ -316,16 +413,79 @@
     }
 
     function showProgress(show, text = 'Processing...') {
-      document.getElementById('progress').className = show ? 'mt-6' : 'hidden';
-      document.getElementById('progress-text').textContent = text;
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('progress').className = show ? 'mt-6' : 'hidden';
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('progress-text').textContent = text;
     }
 
     function showMenu() {
-      document.getElementById('menu').classList.remove('hidden');
-      document.getElementById('jobs').classList.add('hidden');
-      document.getElementById('confirm-dialog').classList.add('hidden');
-      document.getElementById('estimate-dialog').classList.add('hidden');
-      document.getElementById('estimate-fields').classList.add('hidden');
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('menu').classList.remove('hidden');
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('jobs').classList.add('hidden');
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('confirm-dialog').classList.add('hidden');
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('estimate-dialog').classList.add('hidden');
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('estimate-fields').classList.add('hidden');
       pendingData = null;
       
       // Reset fields after Add Install Date
@@ -348,10 +508,37 @@
       fetch(API + '/api/jobs').then(r => r.json()).then(jobs => {
         const months = Object.keys(jobs);
         const current = months.includes('April') ? 'April' : months[0];
-        document.getElementById('month-tabs').innerHTML = months.map(m => `<button onclick="showMonth('${m}')" class="px-5 py-2.5 rounded-xl font-semibold text-sm transition-all ${m === current ? 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/25' : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'}">${m}</button>`).join('');
+    // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('month-tabs').innerHTML = months.map(m => `<button onclick="showMonth('${m}')" class="px-5 py-2.5 rounded-xl font-semibold text-sm transition-all ${m === current ? 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/25' : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'}">${m}</button>`).join('');
         showMonth(current);
-        document.getElementById('menu').classList.add('hidden');
-        document.getElementById('jobs').classList.remove('hidden');
+    // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('menu').classList.add('hidden');
+    // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('jobs').classList.remove('hidden');
       }).finally(() => showProgress(false));
     }
 
@@ -363,8 +550,26 @@
         if (job) {
           pendingData = { ...job, month: month, row: row };
           showConfirmDialog(job);
-          document.getElementById('confirm-dialog').classList.remove('hidden');
-          document.getElementById('jobs').classList.add('hidden');
+      // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('confirm-dialog').classList.remove('hidden');
+      // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('jobs').classList.add('hidden');
         }
       } catch(err) { showStatus('Error: ' + err.message, true); }
       showProgress(false);
@@ -418,10 +623,28 @@
     
     async function showRequestInstallModal() {
       if (!window.jobs || Object.keys(window.jobs).length === 0) {
-        document.getElementById('progress').classList.remove('hidden');
+    // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('progress').classList.remove('hidden');
         const response = await fetch(API + '/api/jobs');
         window.jobs = await response.json();
-        document.getElementById('progress').classList.add('hidden');
+    // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('progress').classList.add('hidden');
       }
       
       const months = Object.keys(window.jobs || {});
@@ -434,12 +657,66 @@
       html += months.map(m => '<button onclick="showRequestInstallMonth(\''+m+'\')" class="px-3 py-1 bg-gray-700 text-white rounded">' + m + '</button>').join('');
       html += '</div><button onclick="showMenu()" class="text-yellow-500 font-semibold">← Back to Home</button>';
       
-      document.getElementById('estimate-job-select').innerHTML = html;
-      document.getElementById('estimate-dialog').classList.remove('hidden');
-      document.getElementById('estimate-fields').classList.add('hidden');
-      document.getElementById('menu').classList.add('hidden');
-      document.getElementById('jobs').classList.add('hidden');
-      document.getElementById('confirm-dialog').classList.add('hidden');
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('estimate-job-select').innerHTML = html;
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('estimate-dialog').classList.remove('hidden');
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('estimate-fields').classList.add('hidden');
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('menu').classList.add('hidden');
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('jobs').classList.add('hidden');
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('confirm-dialog').classList.add('hidden');
       document.querySelector('#estimate-dialog h2').textContent = 'Request Install Date';
     }
     
@@ -448,7 +725,16 @@
       let html = '<p class="text-gray-400 mb-2">Select Job:</p><div class="space-y-2 max-h-60 overflow-y-auto">';
       html += jobs.map((j, i) => '<button onclick="sendInstallRequest(\''+month+'\','+j.row+')" class="w-full text-left p-3 bg-gray-800 rounded-lg hover:bg-gray-700"><div class="text-white font-bold">' + (j.owner || 'Unknown') + '</div><div class="text-gray-400 text-sm">' + (j.address || 'No address') + '</div></button>').join('');
       html += '</div>';
-      document.getElementById('estimate-job-select').innerHTML = html;
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('estimate-job-select').innerHTML = html;
     }
     
     function sendInstallRequest(month, row) {
@@ -469,10 +755,28 @@
     async function showRequestEstimateModal() {
       // Load jobs first
       if (!window.jobs || Object.keys(window.jobs).length === 0) {
-        document.getElementById('progress').classList.remove('hidden');
+    // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('progress').classList.remove('hidden');
         const response = await fetch(API + '/api/jobs');
         window.jobs = await response.json();
-        document.getElementById('progress').classList.add('hidden');
+    // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('progress').classList.add('hidden');
       }
       
       const months = Object.keys(window.jobs || {});
@@ -486,12 +790,66 @@
       html += months.map(m => '<button onclick="showRequestMonth(\''+m+'\')" class="px-3 py-1 bg-gray-700 text-white rounded">' + m + '</button>').join('');
       html += '</div>';
       
-      document.getElementById('estimate-job-select').innerHTML = html;
-      document.getElementById('estimate-dialog').classList.remove('hidden');
-      document.getElementById('estimate-fields').classList.add('hidden');
-      document.getElementById('menu').classList.add('hidden');
-      document.getElementById('jobs').classList.add('hidden');
-      document.getElementById('confirm-dialog').classList.add('hidden');
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('estimate-job-select').innerHTML = html;
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('estimate-dialog').classList.remove('hidden');
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('estimate-fields').classList.add('hidden');
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('menu').classList.add('hidden');
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('jobs').classList.add('hidden');
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('confirm-dialog').classList.add('hidden');
       document.querySelector('#estimate-dialog h2').textContent = 'Request Estimate';
     }
     
@@ -500,7 +858,16 @@
       let html = '<p class="text-gray-400 mb-2">Select Job:</p><div class="space-y-2 max-h-60 overflow-y-auto">';
       html += jobs.map((j, i) => '<button onclick="sendEstimateRequest(\''+month+'\','+j.row+')" class="w-full text-left p-3 bg-gray-800 rounded-lg hover:bg-gray-700"><div class="text-white font-bold">' + (j.owner || 'Unknown') + '</div><div class="text-gray-400 text-sm">' + (j.address || 'No address') + '</div></button>').join('');
       html += '</div>';
-      document.getElementById('estimate-job-select').innerHTML = html;
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('estimate-job-select').innerHTML = html;
     }
     
     function sendEstimateRequest(month, row) {
@@ -520,10 +887,28 @@
     
     async function showInstallDateModal() {
       if (!window.jobs || Object.keys(window.jobs).length === 0) {
-        document.getElementById('progress').classList.remove('hidden');
+    // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('progress').classList.remove('hidden');
         const response = await fetch(API + '/api/jobs');
         window.jobs = await response.json();
-        document.getElementById('progress').classList.add('hidden');
+    // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('progress').classList.add('hidden');
       }
       
       const months = Object.keys(window.jobs || {});
@@ -536,12 +921,66 @@
       html += months.map(m => '<button onclick="showInstallMonth(\''+m+'\')" class="px-3 py-1 bg-gray-700 text-white rounded">' + m + '</button>').join('');
       html += '</div>';
       
-      document.getElementById('estimate-job-select').innerHTML = html;
-      document.getElementById('estimate-dialog').classList.remove('hidden');
-      document.getElementById('estimate-fields').classList.add('hidden');
-      document.getElementById('menu').classList.add('hidden');
-      document.getElementById('jobs').classList.add('hidden');
-      document.getElementById('confirm-dialog').classList.add('hidden');
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('estimate-job-select').innerHTML = html;
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('estimate-dialog').classList.remove('hidden');
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('estimate-fields').classList.add('hidden');
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('menu').classList.add('hidden');
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('jobs').classList.add('hidden');
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('confirm-dialog').classList.add('hidden');
       document.querySelector('#estimate-dialog h2').textContent = 'Add Install Date';
     }
     
@@ -550,23 +989,104 @@
       let html = '<p class="text-gray-400 mb-2">Select Job:</p><div class="space-y-2 max-h-60 overflow-y-auto">';
       html += jobs.map((j, i) => '<button onclick="selectInstallJob(\''+month+'\','+j.row+')" class="w-full text-left p-3 bg-gray-800 rounded-lg hover:bg-gray-700"><div class="text-white font-bold">' + (j.owner || 'Unknown') + '</div><div class="text-gray-400 text-sm">' + (j.address || 'No address') + '</div></button>').join('');
       html += '</div>';
-      document.getElementById('estimate-job-select').innerHTML = html;
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('estimate-job-select').innerHTML = html;
     }
     
     let installSelectedJob = null;
     
     function selectInstallJob(month, row) {
       installSelectedJob = { month, row };
-      document.getElementById('estimate-fields').classList.remove('hidden');
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('estimate-fields').classList.remove('hidden');
       document.querySelector('#estimate-dialog h2').textContent = 'Add Install Date';
       // Update fields for install date
-      document.getElementById('edit-estimateDate').id = 'temp-install-date';
-      document.getElementById('edit-squares').parentElement.style.display = 'none';
-      document.getElementById('edit-primaryContractor').parentElement.style.display = 'none';
-      document.getElementById('edit-paid').parentElement.style.display = 'none';
-      document.getElementById('temp-install-date').type = 'date';
-      document.getElementById('temp-install-date').parentElement.querySelector('label').textContent = 'Install Date:';
-      document.getElementById('temp-install-date').id = 'edit-install-date';
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('edit-estimateDate').id = 'temp-install-date';
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('edit-squares').parentElement.style.display = 'none';
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('edit-primaryContractor').parentElement.style.display = 'none';
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('edit-paid').parentElement.style.display = 'none';
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('temp-install-date').type = 'date';
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('temp-install-date').parentElement.querySelector('label').textContent = 'Install Date:';
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('temp-install-date').id = 'edit-install-date';
       
       // Change save button
       const saveBtn = document.querySelector('#estimate-fields button');
@@ -595,17 +1115,71 @@
     async function showEstimateModal() {
       // Load jobs if not loaded
       if (!window.jobs || Object.keys(window.jobs).length === 0) {
-        document.getElementById('progress').classList.remove('hidden');
+    // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('progress').classList.remove('hidden');
         const response = await fetch(API + '/api/jobs');
         window.jobs = await response.json();
-        document.getElementById('progress').classList.add('hidden');
+    // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('progress').classList.add('hidden');
       }
       
       // First show the dialog with job selection
-      document.getElementById('estimate-dialog').classList.remove('hidden');
-      document.getElementById('jobs').classList.add('hidden');
-      document.getElementById('menu').classList.add('hidden');
-      document.getElementById('confirm-dialog').classList.add('hidden');
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('estimate-dialog').classList.remove('hidden');
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('jobs').classList.add('hidden');
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('menu').classList.add('hidden');
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('confirm-dialog').classList.add('hidden');
       document.querySelector('#estimate-dialog h2').textContent = 'Add Estimate';
       
       // Show month buttons to pick from
@@ -613,8 +1187,26 @@
       let html = '<p class="text-gray-400 mb-2">Select Month:</p><div class="flex flex-wrap gap-2 mb-4">';
       html += months.map(m => '<button onclick="showEstimateMonth(\''+m+'\')" class="px-3 py-1 bg-gray-700 text-white rounded">' + m + '</button>').join('');
       html += '</div>';
-      document.getElementById('estimate-job-select').innerHTML = html;
-      document.getElementById('estimate-fields').classList.add('hidden');
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('estimate-job-select').innerHTML = html;
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('estimate-fields').classList.add('hidden');
     }
     
     function showEstimateMonth(month) {
@@ -622,12 +1214,30 @@
       let html = '<p class="text-gray-400 mb-2">Select Job:</p><div class="space-y-2 max-h-60 overflow-y-auto">';
       html += jobs.map((j, i) => '<button onclick="selectEstimateJob(\''+month+'\','+j.row+','+i+')" class="w-full text-left p-3 bg-gray-800 rounded-lg hover:bg-gray-700"><div class="text-white font-bold">' + (j.owner || 'Unknown') + '</div><div class="text-gray-400 text-sm">' + (j.address || 'No address') + '</div></button>').join('');
       html += '</div>';
-      document.getElementById('estimate-job-select').innerHTML = html;
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('estimate-job-select').innerHTML = html;
     }
     
     function selectEstimateJob(month, row, index) {
       estimateSelectedJob = { month, row };
-      document.getElementById('estimate-fields').classList.remove('hidden');
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('estimate-fields').classList.remove('hidden');
       
       // Load contractors dropdown
       const select = document.getElementById('edit-primaryContractor');
@@ -654,7 +1264,16 @@
       }).then(r => r.json()).then(data => {
         if (data.success) {
           alert('Estimate saved!');
-          document.getElementById('estimate-dialog').classList.add('hidden');
+      // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('estimate-dialog').classList.add('hidden');
           showMenu();
         } else {
           alert('Error: ' + data.error);
@@ -663,17 +1282,44 @@
     }
     
     function cancelEstimate() {
-      document.getElementById('estimate-dialog').classList.add('hidden');
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('estimate-dialog').classList.add('hidden');
       showMenu();
     }
     
     async function showEstimateModal_old() {
       // Fetch jobs first if not loaded
       if (!window.jobs || Object.keys(window.jobs).length === 0) {
-        document.getElementById('progress').classList.remove('hidden');
+    // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('progress').classList.remove('hidden');
         const response = await fetch(API + '/api/jobs');
         window.jobs = await response.json();
-        document.getElementById('progress').classList.add('hidden');
+    // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('progress').classList.add('hidden');
       }
       
       const months = Object.keys(window.jobs || {});
@@ -867,8 +1513,26 @@ function showConfirmDialog(data) {
       const file = event.target.files[0];
       if (!file) { alert('No file'); return; }
       
-      document.getElementById('progress').className = 'mt-6';
-      document.getElementById('progress-text').textContent = 'Reading...';
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('progress').className = 'mt-6';
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('progress-text').textContent = 'Reading...';
       alert('Starting file read...');
       
       const reader = new FileReader(); alert('Creating FileReader...');
@@ -876,7 +1540,16 @@ function showConfirmDialog(data) {
       
       reader.onload = async function() {
         const imageData = reader.result.split(',')[1];
-        document.getElementById('progress-text').textContent = 'Processing...';
+    // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('progress-text').textContent = 'Processing...';
         
         const response = await fetch(API + '/api/upload-json', {
           method: 'POST',
@@ -885,7 +1558,16 @@ function showConfirmDialog(data) {
         });
         
         const result = await response.json();
-        document.getElementById('progress').className = 'hidden';
+    // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('progress').className = 'hidden';
         
         if (result.success && result.previewData) {
           pendingData = result.previewData;
@@ -901,7 +1583,16 @@ function showConfirmDialog(data) {
           html += '<button onclick="location.reload()" class="btn-secondary w-full py-2 mt-2 rounded-xl">Cancel</button>';
           html += '</div>';
           
-          document.getElementById('menu').innerHTML = html;
+      // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('menu').innerHTML = html;
         } else {
           alert('Error: ' + (result.error || 'Could not extract'));
         }
@@ -942,10 +1633,28 @@ function showConfirmDialog(data) {
     // NEW CLEAN UPLOAD CONTRACT FUNCTIONALITY
     // ========================================
     
-      document.getElementById('contract-file-input').click();
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('contract-file-input').click();
     });
     
-    document.getElementById('contract-file-input').addEventListener('change', async function(e) { try {
+// Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('contract-file-input').addEventListener('change', async function(e) {
       const file = e.target.files[0];
       if (!file) return;
       
@@ -994,7 +1703,6 @@ function showConfirmDialog(data) {
       
       // Reset input
       e.target.value = '';
-      } catch(err) { alert('ERROR in change handler: ' + err.message); }}
     });
     
     function showExtractedData(data) {
@@ -1012,7 +1720,16 @@ function showConfirmDialog(data) {
       html += '<button onclick="location.reload()" class="btn-secondary w-full py-2 mt-2 rounded-xl">❌ Cancel</button>';
       html += '</div>';
       
-      document.getElementById('menu').innerHTML = html;
+  // Debug: Verify script loaded
+console.log('Script starting...');
+window.onload = function() {
+  console.log('Window loaded');
+  const btn = document.getElementById('upload-contract-btn');
+  console.log('Upload button found:', !!btn);
+  if(btn) btn.onclick = function() { alert('Inline onclick works!'); document.getElementById('contract-file-input').click(); };
+};
+
+    document.getElementBy('menu').innerHTML = html;
       pendingData = data;
     }
 
