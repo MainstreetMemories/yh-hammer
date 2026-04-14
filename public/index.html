@@ -702,15 +702,22 @@ function showConfirmDialog(data) {
         
         const result = await response.json();
 
-        if (result.success && result.previewData) {
+        console.log('Upload result:', result); // Debug log
+        
+        if (result.error) {
+          showStatus(result.error || 'Error extracting data', true);
+          showProgress(false);
+        } else if (result.success && result.previewData) {
           showProgress(false);
           pendingData = result.previewData;
           showConfirmDialog(result.previewData);
-        } else if (result.error) {
-          showStatus(result.error || 'Error extracting data', true);
+        } else if (result.success) {
+          // Success but no preview - this is the bug! Show an error
+          showStatus('Could not extract data from image. Try a clearer photo.', true);
           showProgress(false);
         }
       } catch (err) {
+        console.error('Upload error:', err);
         showStatus('Error: ' + err.message, true);
         showProgress(false);
       }
