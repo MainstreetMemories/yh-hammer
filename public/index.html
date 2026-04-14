@@ -125,7 +125,7 @@
     const API = window.location.origin;
 
     // Fix: Ensure file input change is detected
-    document.getElementById('file-input').addEventListener('change', function(e) {
+    document.getElementById('file-input').addEventListener('change', function(e) { alert('EVENT TRIGGERED - File: ' + (e.target.files[0] ? e.target.files[0].name : 'none'));
       console.log('File input changed', e.target.files);
       if (e.target.files.length > 0) {
         handleFile({target: e.target});
@@ -139,7 +139,7 @@
     });
     
     // When file is selected via the hidden input, process it
-    document.getElementById('file-input').addEventListener('change', function(e) {
+    document.getElementById('file-input').addEventListener('change', function(e) { alert('EVENT TRIGGERED - File: ' + (e.target.files[0] ? e.target.files[0].name : 'none'));
       if (e.target.files.length > 0) {
         // File selected - manually trigger the handler
         var event = {target: e.target};
