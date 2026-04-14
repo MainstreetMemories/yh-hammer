@@ -656,7 +656,6 @@ function showConfirmDialog(data) {
           body: JSON.stringify(pendingData)
         });
         const result = await response.json();
-        alert("Step 4: Got response, checking...");
         if (result.success) {
           showStatus('✓ Contract saved to ' + result.month);
         } else {
@@ -700,25 +699,26 @@ function showConfirmDialog(data) {
         alert('Step 3: File read, sending to API... Length: ' + imageData.length);
 
         showProgress(true, 'Extracting data...');
-
+      alert("Step 3.5: About to fetch API...");
+      
+      try {
         const response = await fetch(API + '/api/upload-json', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ file: imageData, isPdf: isPdfFile(file), preview: true })
         });
+        alert("Step 3.6: Response status: " + response.status);
         
         const result = await response.json();
-        alert("Step 4: Got response, checking...");
+        alert("Step 3.7: Got JSON result");
 
         alert('Step 4: Got response: ' + JSON.stringify(result));
         console.log('Upload result:', result); // Debug log
         
         if (result.error) {
-          alert("Step 5: Error: " + result.error);
           showStatus(result.error || 'Error extracting data', true);
           showProgress(false);
         } else if (result.success && result.previewData) {
-          alert("Step 5: Success with previewData, showing dialog...");
           showProgress(false);
           pendingData = result.previewData;
           showConfirmDialog(result.previewData);
