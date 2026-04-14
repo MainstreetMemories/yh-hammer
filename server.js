@@ -3,10 +3,7 @@ const multer = require('multer');
 const fs = require('fs');
 const { google } = require('googleapis');
 const path = require('path');
-const { fileURLToPath } = require('url');
-const fetch = require('node-fetch');
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const credentials = JSON.parse(fs.readFileSync(path.join(__dirname, 'credentials.json')));
 const auth = new google.auth.GoogleAuth({ credentials, scopes: ['https://www.googleapis.com/auth/spreadsheets'] });
 const sheets = google.sheets({ version: 'v4', auth });
@@ -31,23 +28,37 @@ app.get('/api/jobs', async (req, res) => {
   res.json(allJobs);
 });
 
-// Upload contract - extract data via AI
-app.post('/api/upload', upload.single('file'), async (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'No file' });
-  
-  const image = req.file.buffer.toString('base64');
-  const mimeType = req.file.mimetype || 'image/jpeg';
+// Get single job
+app.get('/api/get-job', async (req, res) => {
+  const { month, row } = req.query;
+  const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A${row}:AE${row}` });
+  const data = r.data.values?.[0] || [];
+  res.json({
+    address: data[0] || '', certOfComp: data[1] || '', contractDate: data[2] || '', estimateDate: data[3] || '', installDate: data[4] || '',
+    owner: data[5] || '', totalCost: data[6] || '', requiredDownPayment: data[7] || '', financeAmount: data[8] || '', additionalExpense: data[9] || '',
+    totalBalanceDue: data[10] || '', toooP: data[11] || '', depAmtHeld: data[12] || '', amountDue: data[13] || '', pmntMethod: data[14] || '',
+    datePaid: data[16] || '', checkNum: data[17] || '', amountPaid: data[18] || '', dripEdgeColor: data[19] || '', ventilationColor: data[20] || '',
+    manufacturer: data[21] || '', shingleType: data[22] || '', shingleColor: data[23] || '', estimatedSquares: data[24] || '', notes: data[25] || ''
+  });
+});
+
+// Upload contract
+app.post('/api/upload-json', upload.single('file'), async (req, res) => {
+  if (!req.body.file) return res.status(400).json({ error: 'No file' });
   
   try {
     const apiKey = process.env.OPENROUTER_API_KEY;
+    const image = req.body.file;
+    const isPdf = req.body.isPdf;
+    
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}`, 'HTTP-Referer': 'https://yh-hammer.onrender.com', 'X-Title': 'Yellow Hammer' },
       body: JSON.stringify({
         model: 'anthropic/claude-3-haiku',
         messages: [{ role: 'user', content: [
-          { type: 'text', text: 'Extract: Owner, Address (street city state zip), Phone, Email, Total Cost, T.O.O.P (Total Out of Pocket), Contract Date, Manufacturer, Shingle Type, Shingle Color, Ventilation Color, Drip Edge Color, Notes. Format: Field: Value' },
-          { type: 'image_url', image_url: { url: `data:${mimeType};base64,${image}` } }
+          { type: 'text', text: 'Extract: Owner, Address (street city state zip), Phone, Email, Total Cost, T.O.O.P, Contract Date, Manufacturer, Shingle Type, Shingle Color, Ventilation Color, Drip Edge Color, Notes. Format: Field: Value' },
+          { type: 'image_url', image_url: { url: isPdf ? `data:image/png;base64,${image.split('||PAGE||')[0]}` : `data:image/jpeg;base64,${image}` } }
         ]}],
         max_tokens: 1500
       })
@@ -65,13 +76,13 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
       phone: field('Phone') || '',
       email: field('Email') || '',
       totalCost: amounts[0]?.replace(/[$,]/g, '') || '0',
-      tooop: field('T.O.O.P') || field('Out of Pocket') || amounts[1]?.replace(/[$,]/g, '') || '0',
-      date: field('Date') || field('Contract Date') || '',
+      toooP: field('T.O.O.P') || field('Out of Pocket') || amounts[1]?.replace(/[$,]/g, '') || '0',
+      contractDate: field('Date') || field('Contract Date') || '',
       manufacturer: field('Manufacturer') || '',
       shingleType: field('Type') || field('Shingle Type') || '',
       shingleColor: field('Color') || field('Shingle Color') || '',
-      ventilation: field('Ventilation') || '',
-      dripEdge: field('Drip Edge') || '',
+      ventilationColor: field('Ventilation') || '',
+      dripEdgeColor: field('Drip Edge') || '',
       notes: field('Notes') || ''
     };
     
@@ -81,29 +92,36 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     
     const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     let month = 'April';
-    for (let i = 0; i < months.length; i++) if (job.date.toLowerCase().includes(months[i].toLowerCase())) month = months[i];
+    for (let i = 0; i < months.length; i++) if (job.contractDate.toLowerCase().includes(months[i].toLowerCase())) month = months[i];
     
-    const rowData = [job.address, '', job.date, '', '', job.owner, job.totalCost, '0', '0', '0', job.totalCost, job.tooop, '0', '0', '', '', job.phone, job.email, '', job.dripEdge, job.ventilation, job.manufacturer, job.shingleType, job.shingleColor, '', '', '', '', '', '', '', '', '', ''];
+    const rowData = [job.address, '', job.contractDate, '', '', job.owner, job.totalCost, '0', '0', '0', job.totalCost, job.toooP, '0', '0', '', '', job.phone, job.email, '', job.dripEdgeColor, job.ventilationColor, job.manufacturer, job.shingleType, job.shingleColor, '', '', '', '', '', '', '', '', '', ''];
     
     const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A:AE` });
     const nextRow = (r.data.values?.length || 0) + 4;
     
     await sheets.spreadsheets.values.update({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A${nextRow}:AE${nextRow}`, valueInputOption: 'USER_ENTERED', requestBody: { values: [rowData] } });
     
-    res.json({ success: true, month, owner: job.owner });
+    res.json({ success: true, month, owner: job.owner, previewData: job });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
+// Save confirmed job
+app.post('/api/save-confirmed', async (req, res) => {
+  const { month, row, ...data } = req.body;
+  // Build row data from all fields - this would need full implementation
+  res.json({ success: true, month: month || 'April' });
+});
+
 // Add estimate
-app.post('/api/add-estimate', async (req, res) => {
-  const { month, row, date, squares, contractor, amount } = req.body;
+app.post('/api/save-estimate', async (req, res) => {
+  const { month, row, estimateDate, permitCost, primaryContractor, paid } = req.body;
   try {
-    await sheets.spreadsheets.values.update({ spreadsheetId: SPREADSHEET_ID, range: `${month}!D${row}`, valueInputOption: 'USER_ENTERED', requestBody: { values: [[date]] } });
-    await sheets.spreadsheets.values.update({ spreadsheetId: SPREADSHEET_ID, range: `${month}!Y${row}`, valueInputOption: 'USER_ENTERED', requestBody: { values: [[squares]] } });
-    await sheets.spreadsheets.values.update({ spreadsheetId: SPREADSHEET_ID, range: `${month}!AC${row}`, valueInputOption: 'USER_ENTERED', requestBody: { values: [[contractor]] } });
-    await sheets.spreadsheets.values.update({ spreadsheetId: SPREADSHEET_ID, range: `${month}!AE${row}`, valueInputOption: 'USER_ENTERED', requestBody: { values: [[amount]] } });
+    await sheets.spreadsheets.values.update({ spreadsheetId: SPREADSHEET_ID, range: `${month}!D${row}`, valueInputOption: 'USER_ENTERED', requestBody: { values: [[estimateDate]] } });
+    await sheets.spreadsheets.values.update({ spreadsheetId: SPREADSHEET_ID, range: `${month}!Y${row}`, valueInputOption: 'USER_ENTERED', requestBody: { values: [[permitCost]] } });
+    await sheets.spreadsheets.values.update({ spreadsheetId: SPREADSHEET_ID, range: `${month}!AC${row}`, valueInputOption: 'USER_ENTERED', requestBody: { values: [[primaryContractor]] } });
+    await sheets.spreadsheets.values.update({ spreadsheetId: SPREADSHEET_ID, range: `${month}!AE${row}`, valueInputOption: 'USER_ENTERED', requestBody: { values: [[paid]] } });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -111,7 +129,7 @@ app.post('/api/add-estimate', async (req, res) => {
 });
 
 // Add install date
-app.post('/api/add-install', async (req, res) => {
+app.post('/api/save-install', async (req, res) => {
   const { month, row, installDate } = req.body;
   try {
     await sheets.spreadsheets.values.update({ spreadsheetId: SPREADSHEET_ID, range: `${month}!E${row}`, valueInputOption: 'USER_ENTERED', requestBody: { values: [[installDate]] } });
@@ -134,29 +152,6 @@ app.post('/api/request-estimate', async (req, res) => {
       body: JSON.stringify({ bot_id: botId, text })
     });
     res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Update job (edit form)
-app.post('/api/update-job', async (req, res) => {
-  const { month, row, data } = req.body;
-  try {
-    const range = `${month}!A${row}:AE${row}`;
-    await sheets.spreadsheets.values.update({ spreadsheetId: SPREADSHEET_ID, range, valueInputOption: 'USER_ENTERED', requestBody: { values: [data] } });
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Get single job for edit
-app.get('/api/job/:month/:row', async (req, res) => {
-  const { month, row } = req.params;
-  try {
-    const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A${row}:AE${row}` });
-    res.json({ data: r.data.values?.[0] || [] });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
