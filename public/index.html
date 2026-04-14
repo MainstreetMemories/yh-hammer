@@ -656,6 +656,7 @@ function showConfirmDialog(data) {
           body: JSON.stringify(pendingData)
         });
         const result = await response.json();
+        alert("Step 4: Got response, checking...");
         if (result.success) {
           showStatus('✓ Contract saved to ' + result.month);
         } else {
@@ -707,14 +708,17 @@ function showConfirmDialog(data) {
         });
         
         const result = await response.json();
+        alert("Step 4: Got response, checking...");
 
         alert('Step 4: Got response: ' + JSON.stringify(result));
         console.log('Upload result:', result); // Debug log
         
         if (result.error) {
+          alert("Step 5: Error: " + result.error);
           showStatus(result.error || 'Error extracting data', true);
           showProgress(false);
         } else if (result.success && result.previewData) {
+          alert("Step 5: Success with previewData, showing dialog...");
           showProgress(false);
           pendingData = result.previewData;
           showConfirmDialog(result.previewData);
