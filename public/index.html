@@ -58,7 +58,7 @@
         if (data[f]) html += '<p><strong>'+f+':</strong> '+data[f]+'</p>';
       });
       html += '<button onclick="location.reload()" class="btn-secondary w-full mt-4">OK</button></div>';
-      document.getElementById('menu').innerHTML = html;
+      document.getElementById('menu').innerHTML = html; document.getElementById('menu').classList.remove('hidden');
     }
 </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js">
@@ -116,7 +116,7 @@
         if (data[f]) html += '<p><strong>'+f+':</strong> '+data[f]+'</p>';
       });
       html += '<button onclick="location.reload()" class="btn-secondary w-full mt-4">OK</button></div>';
-      document.getElementById('menu').innerHTML = html;
+      document.getElementById('menu').innerHTML = html; document.getElementById('menu').classList.remove('hidden');
     }
 </script>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -828,7 +828,7 @@ function showConfirmDialog(data) {
           html += '<button onclick="location.reload()" class="btn-secondary w-full py-2 mt-2 rounded-xl">Cancel</button>';
           html += '</div>';
           
-          document.getElementById('menu').innerHTML = html;
+          document.getElementById('menu').innerHTML = html; document.getElementById('menu').classList.remove('hidden');
         } else {
           alert('Error: ' + (result.error || 'Could not extract'));
         }
@@ -918,7 +918,7 @@ function showConfirmDialog(data) {
         if (data[f]) html += '<p><strong>'+f+':</strong> '+data[f]+'</p>';
       });
       html += '<button onclick="location.reload()" class="btn-secondary w-full mt-4">OK</button></div>';
-      document.getElementById('menu').innerHTML = html;
+      document.getElementById('menu').innerHTML = html; document.getElementById('menu').classList.remove('hidden');
     }
 </script>
 
