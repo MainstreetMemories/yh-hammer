@@ -565,6 +565,8 @@
 ];
 
 function showConfirmDialog(data) {
+  document.getElementById("confirm-dialog").classList.remove("hidden");
+  document.getElementById("menu").classList.add("hidden");
   // Build form with all fields
   let fieldsHtml = ALL_FIELDS.map(f => `
     <div class="flex items-center gap-2">
