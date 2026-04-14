@@ -63,12 +63,12 @@
     </div>
 
     <div id="menu" class="grid gap-5 mt-2">
-      <button onclick="document.getElementById('file-input').click()" class="btn-primary group relative overflow-hidden py-7 px-5 rounded-3xl text-white font-bold text-xl shadow-2xl flex items-center justify-center gap-4">
+      <button onclick="if(confirm('Test: Click OK to select file')) document.getElementById('file-input').click()" class="btn-primary group relative overflow-hidden py-7 px-5 rounded-3xl text-white font-bold text-xl shadow-2xl flex items-center justify-center gap-4">
         <div class="absolute inset-0 bg-white/10 group-hover:bg-white/20 transition-colors"></div>
         <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 drop-shadow-lg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0016.07 6H17a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
         <span class="relative z-10">Upload Contract</span>
       </button>
-      <input type="file" id="file-input" accept="image/*,.pdf" class="hidden" onchange="handleFile(event)">
+      <input type="file" id="file-input" accept="image/*,.pdf" class="" onchange="handleFile(event)">
       
       <button onclick="showRequestEstimateModal()" class="btn-yellow group relative overflow-hidden py-7 px-5 rounded-3xl text-white font-bold text-xl shadow-2xl flex items-center justify-center gap-4">
         <div class="absolute inset-0 bg-white/10 group-hover:bg-white/20 transition-colors"></div>
@@ -121,7 +121,6 @@
   </div>
 
   <script>
-      alert("JS loaded - Yellow Hammer app ready");
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     const API = window.location.origin;
     let pendingData = null;
