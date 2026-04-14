@@ -18,11 +18,9 @@
         
         let imageData;
         if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
-          alert('Converting PDF...');
           const images = await convertPdfToImages(file);
           imageData = images.join('||PAGE||');
         } else {
-          alert('Reading image...');
           imageData = await new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = () => resolve(reader.result.split(',')[1]);
@@ -30,8 +28,6 @@
             reader.readAsDataURL(file);
           });
         }
-        
-        alert('Sending to AI...');
         
         const response = await fetch(API + '/api/upload-json', {
           method: 'POST',
@@ -42,7 +38,7 @@
         const result = await response.json();
         
         if (result.success) {
-          alert('✅ SUCCESS! Contract saved to ' + (result.month || 'sheet'));
+          alert('✅ Contract saved to ' + result.month + ' for ' + (result.owner || 'job'));
           location.reload();
         } else {
           alert('Error: ' + (result.error || 'Failed'));
@@ -76,11 +72,9 @@
         
         let imageData;
         if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
-          alert('Converting PDF...');
           const images = await convertPdfToImages(file);
           imageData = images.join('||PAGE||');
         } else {
-          alert('Reading image...');
           imageData = await new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = () => resolve(reader.result.split(',')[1]);
@@ -88,8 +82,6 @@
             reader.readAsDataURL(file);
           });
         }
-        
-        alert('Sending to AI...');
         
         const response = await fetch(API + '/api/upload-json', {
           method: 'POST',
@@ -100,7 +92,7 @@
         const result = await response.json();
         
         if (result.success) {
-          alert('✅ SUCCESS! Contract saved to ' + (result.month || 'sheet'));
+          alert('✅ Contract saved to ' + result.month + ' for ' + (result.owner || 'job'));
           location.reload();
         } else {
           alert('Error: ' + (result.error || 'Failed'));
@@ -186,7 +178,7 @@
       <button id="new-upload-btn" onclick="handleNewUpload()" class="btn-green w-full py-3 rounded-xl font-bold text-white mt-2">
         📤 Upload Contract (New)
       </button>
-      <input type="file" id="file-input" accept="image/*,.pdf" onchange="alert('onchange fired!'); handleFile(event);" style="border:3px solid red;padding:10px;">
+      <input type="file" id="file-input" accept="image/*,.pdf" onchange=" handleFile(event);" style="border:3px solid red;padding:10px;">
       
       <button onclick="showRequestEstimateModal()" class="btn-yellow group relative overflow-hidden py-7 px-5 rounded-3xl text-white font-bold text-xl shadow-2xl flex items-center justify-center gap-4">
         <div class="absolute inset-0 bg-white/10 group-hover:bg-white/20 transition-colors"></div>
@@ -362,7 +354,6 @@
       
       const months = Object.keys(window.jobs || {});
       if (months.length === 0) {
-        alert('No jobs found.');
         return;
       }
       
@@ -394,7 +385,6 @@
         body: JSON.stringify({ month, row })
       }).then(r => r.json()).then(data => {
         if (data.success) {
-          alert('Install date request sent!');
         } else {
           alert('Error: ' + data.error);
         }
@@ -413,7 +403,6 @@
       
       const months = Object.keys(window.jobs || {});
       if (months.length === 0) {
-        alert('No jobs found. Upload a contract first.');
         return;
       }
       
@@ -446,7 +435,6 @@
         body: JSON.stringify({ month, row })
       }).then(r => r.json()).then(data => {
         if (data.success) {
-          alert('Estimate request sent!');
         } else {
           alert('Error: ' + data.error);
         }
@@ -464,7 +452,6 @@
       
       const months = Object.keys(window.jobs || {});
       if (months.length === 0) {
-        alert('No jobs found. Upload a contract first.');
         return;
       }
       
@@ -520,7 +507,6 @@
         body: JSON.stringify({ month: installSelectedJob.month, row: installSelectedJob.row, installDate })
       }).then(r => r.json()).then(data => {
         if (data.success) {
-          alert('Install date saved!');
         } else {
           alert('Error: ' + data.error);
         }
@@ -589,7 +575,6 @@
         body: JSON.stringify({ month: estimateSelectedJob.month, row: estimateSelectedJob.row, estimateDate, squares, primaryContractor, paid })
       }).then(r => r.json()).then(data => {
         if (data.success) {
-          alert('Estimate saved!');
           document.getElementById('estimate-dialog').classList.add('hidden');
           showMenu();
         } else {
@@ -614,7 +599,6 @@
       
       const months = Object.keys(window.jobs || {});
       if (months.length === 0) {
-        alert('No jobs found. Upload a contract first.');
         return;
       }
       
@@ -622,7 +606,6 @@
       // placeholder to remove('Estimate Date (e.g., 4/13/2026):');
       const month = prompt('Which month is this job in? (' + months.join(', ') + ')');
       if (!month || !months.includes(month)) {
-        alert('Please specify a valid month.');
         return;
       }
       
@@ -633,7 +616,6 @@
       
       const jobIndex = parseInt(jobNum) - 1;
       if (jobIndex < 0 || jobIndex >= jobs.length) {
-        alert('Invalid job number.');
         return;
       }
       
@@ -646,7 +628,6 @@
         body: JSON.stringify({ month, row, estimateDate, squares, permitCost, primaryContractor, paid })
       }).then(r => r.json()).then(data => {
         if (data.success) {
-          alert('Estimate saved!');
           showMenu();
         } else {
           alert('Error: ' + data.error);
@@ -856,7 +837,6 @@ function showConfirmDialog(data) {
       
       const result = await response.json();
       if (result.success) {
-        alert('Saved!');
         location.reload();
       } else {
         alert('Error: ' + result.error);
@@ -878,11 +858,9 @@ function showConfirmDialog(data) {
         
         let imageData;
         if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
-          alert('Converting PDF...');
           const images = await convertPdfToImages(file);
           imageData = images.join('||PAGE||');
         } else {
-          alert('Reading image...');
           imageData = await new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = () => resolve(reader.result.split(',')[1]);
@@ -890,8 +868,6 @@ function showConfirmDialog(data) {
             reader.readAsDataURL(file);
           });
         }
-        
-        alert('Sending to AI...');
         
         const response = await fetch(API + '/api/upload-json', {
           method: 'POST',
@@ -902,7 +878,7 @@ function showConfirmDialog(data) {
         const result = await response.json();
         
         if (result.success) {
-          alert('✅ SUCCESS! Contract saved to ' + (result.month || 'sheet'));
+          alert('✅ Contract saved to ' + result.month + ' for ' + (result.owner || 'job'));
           location.reload();
         } else {
           alert('Error: ' + (result.error || 'Failed'));
@@ -933,11 +909,9 @@ function showConfirmDialog(data) {
         alert('Selected: ' + file.name);
         let imageData;
         if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
-          alert('Converting PDF...');
           const images = await convertPdfToImages(file);
           imageData = images.join('||PAGE||');
         } else {
-          alert('Reading image...');
           imageData = await new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = () => resolve(reader.result.split(',')[1]);
@@ -945,7 +919,6 @@ function showConfirmDialog(data) {
             reader.readAsDataURL(file);
           });
         }
-        alert('Sending to AI...');
         const response = await fetch(API + '/api/upload-json', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -953,7 +926,7 @@ function showConfirmDialog(data) {
         });
         const result = await response.json();
         if (result.success) {
-          alert('✅ SUCCESS! Contract saved to ' + (result.month || 'sheet'));
+          alert('✅ Contract saved to ' + result.month + ' for ' + (result.owner || 'job'));
           location.reload();
         } else {
           alert('Error: ' + (result.error || 'Failed'));
