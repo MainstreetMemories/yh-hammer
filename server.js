@@ -106,7 +106,7 @@ app.post('/api/save-extracted', async (req, res) => {
     var rowData = [address, '', contractDate, '', '', owner, totalCost, '0', '0', '0', totalCost, toooP, '0', '0', '', '', phone, email, '', '', '', manufacturer, shingleType, shingleColor, '', notes, '', '', '', '', ''];
     
     var r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: month + '!A:AE' });
-    var nextRow = (r.data.values ? r.data.values.length : 0) + 4;
+    var nextRow = (r.data.values ? r.data.values.length : 0) + 2;
     
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
