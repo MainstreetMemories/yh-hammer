@@ -31,7 +31,7 @@ app.get('/api/jobs', async (req, res) => {
         const owner = (job[5] || '').toString().toLowerCase();
         return addr && owner && addr !== 'address' && owner !== 'owner';
       });
-      allJobs[month] = jobs.map((job, idx) => ({ row: idx + 4, address: job[0] || '', owner: job[5] || '', phone: job[15] || '', email: job[16] || '', totalCost: job[6] || '', tooop: job[11] || '' }));
+      allJobs[month] = jobs.map((job, idx) => ({ row: idx + 2, address: job[0] || '', owner: job[5] || '', phone: job[15] || '', email: job[16] || '', totalCost: job[6] || '', tooop: job[11] || '' }));
     }
     res.json(allJobs);
   } catch (err) {
@@ -106,7 +106,7 @@ app.post('/api/save-extracted', async (req, res) => {
     var rowData = [address, '', contractDate, '', '', owner, totalCost, '0', '0', '0', totalCost, toooP, '0', '0', '', '', phone, email, '', '', '', manufacturer, shingleType, shingleColor, '', notes, '', '', '', '', ''];
     
     var r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: month + '!A:AE' });
-    var nextRow = (r.data.values ? r.data.values.length : 0) + 2;
+    var nextRow = (r.data.values ? r.data.values.length : 0) + 1;
     
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
