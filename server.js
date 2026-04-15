@@ -246,7 +246,7 @@ app.post('/api/extract-data', async (req, res) => {
       body: JSON.stringify({
         model: 'anthropic/claude-3-haiku',
         messages: [{ role: 'user', content: [
-          { type: 'text', text: 'Extract from any page: Contract Date (after "YHP Representative Signature"). Format each as: Field: Value' },
+          { type: 'text', text: 'Extract from this contract: Owner Name, Property Address, Phone, Email, Contract Date. Format: Owner:Value Address:Value Phone:Value Email:Value Date:Value
           { type: 'image_url', image_url: { url: imageData } }
         ]}],
         max_tokens: 1500
@@ -264,7 +264,10 @@ app.post('/api/extract-data', async (req, res) => {
     const data = await response.json();
     const text = data.choices[0].message.content || '';
     
-    const field = function(n) { var m = text.match(new RegExp('(?:Field:\\s*)?' + n + ':\\s*(.+)', 'i')); return m ? m[1].trim() : ''; };
+    const field = function(n) { 
+      var m = text.match(new RegExp(n + ':([^|\\n]+)', 'i')); 
+      return m ? m[1].trim() : ''; 
+    };
     var amounts = text.match(/\$[\d,]+(?:\.\d{2})?/g) || [];
     
     console.log('AI response:', text);
