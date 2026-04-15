@@ -242,10 +242,10 @@ app.post('/api/extract-data', async (req, res) => {
       body: JSON.stringify({
         model: 'anthropic/claude-3-haiku',
         messages: [{ role: 'user', content: [
-          { type: 'text', text: 'Extract ALL these fields from the contract. Find: 1) Date at bottom (like 3-19-26), 2) Owner name at top, 3) Full property address, 4) Phone number, 5) Email, 6) Total amount (look for largest $ amount), 7) T.O.O.P amount, 8) Drip Edge Color (Black or other), 9) Ventilation Color (Black or other). Return as a list, one per line: FIELD=VALUE' },
+          { type: 'text', text: 'Extract from contract: Owner, Address (street,city,state,zip), Phone, Email, Date, Total Cost, TOOP, DripEdge Color, Vent Color. Format: Owner:Value Address:Value Phone:Value Email:Value Date:Value TotalCost:Value TOOP:Value DripEdge:Value VentColor:Value' },
           { type: 'image_url', image_url: { url: imageData } }
         ]}],
-        max_tokens: 3000
+        max_tokens: 2000
       })
     });
     
@@ -263,31 +263,23 @@ app.post('/api/extract-data', async (req, res) => {
     
     console.log('AI response:', text);
     
-    // Try to parse FIELD=VALUE format
-    var lines = text.split('\n');
-    var extracted = {};
-    lines.forEach(function(line) {
-      var match = line.match(/^(Date|Owner|Street|City|State|Zip|Phone|Email|Total|TOOP|T\.O\.O\.P|DripEdge|VentColor|Ventilation)[\s:=]+(.+)/i);
-      if (match) {
-        extracted[match[1].toLowerCase().replace('t.o.o.p', 'toop').replace('ventilation', 'ventcolor')] = match[2].trim();
-      }
-    });
+    // Parse the simpler format
+    var owner = field('Owner') || field('Name') || '';
+    var phone = field('Phone') || '';
+    var email = field('Email') || '';
+    var contractDate = field('Date') || '';
+    var totalCost = field('TotalCost') ? field('TotalCost').replace(/[$,]/g, '') : (amounts[0] ? amounts[0].replace(/[$,]/g, '') : '0');
+    var toooP = field('TOOP') ? field('TOOP').replace(/[$,]/g, '') : (amounts[1] ? amounts[1].replace(/[$,]/g, '') : '0');
+    var dripEdgeColor = field('DripEdge') || '';
+    var ventilationColor = field('VentColor') || '';
     
-    // Parse separate address fields
-    var street = extracted.street || field('Street') || '';
-    var city = extracted.city || field('City') || '';
-    var state = extracted.state || field('State') || '';
-    var zip = extracted.zip || field('Zip') || '';
+    // Parse address - could be single field or parts
+    var street = field('Street') || '';
+    var city = field('City') || '';
+    var state = field('State') || '';
+    var zip = field('Zip') || '';
     var fullAddress = [street, city, state, zip].filter(function(x) { return x; }).join(', ');
-    
-    var owner = extracted.owner || field('Owner') || field('Name') || '';
-    var phone = extracted.phone || field('Phone') || '';
-    var email = extracted.email || field('Email') || '';
-    var contractDate = extracted.date || field('Date') || '';
-    var totalCost = extracted.total ? extracted.total.replace(/[$,]/g, '') : (amounts[0] ? amounts[0].replace(/[$,]/g, '') : '0');
-    var toooP = extracted.toop ? extracted.toop.replace(/[$,]/g, '') : (amounts[1] ? amounts[1].replace(/[$,]/g, '') : '0');
-    var dripEdgeColor = extracted.dripedge || field('DripEdge') || '';
-    var ventilationColor = extracted.ventcolor || field('VentColor') || '';
+    if (!fullAddress) fullAddress = field('Address') || '';
     
     res.json({ success: true, data: {
       owner: owner,
