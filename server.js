@@ -278,11 +278,6 @@ app.post('/api/extract-data', async (req, res) => {
     
     var dateMatch = text.match(/Date=([^|]+)/i);
     var contractDate = dateMatch ? dateMatch[1].trim() : '';
-    // Fallback: look for any date pattern like 3-19-26 or 03/19/2026
-    if (!contractDate) {
-      var anyDate = text.match(/(\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})/);
-      if (anyDate) contractDate = anyDate[1];
-    }
     
     // Default the rest
     var totalCost = '0';
