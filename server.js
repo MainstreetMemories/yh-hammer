@@ -242,7 +242,7 @@ app.post('/api/extract-data', async (req, res) => {
       body: JSON.stringify({
         model: 'anthropic/claude-3-haiku',
         messages: [{ role: 'user', content: [
-          { type: 'text', text: 'Read this contract and tell me: WHO is the owner (name), WHAT is the property address, WHAT is the phone number, WHAT is the email, WHAT is the date at the bottom (like 3-19-26). Answer in simple format: Owner=NAME | Address=STREET CITY STATE ZIP | Phone=NUMBER | Email=EMAIL | Date=DATE' },
+          { type: 'text', text: 'Read this contract and tell me: WHO is the owner (name), WHAT is the property address, WHAT is the phone number, WHAT is the email, At the BOTTOM look for the DATE next to "Date:" - it looks like 3-19-26. Answer in simple format: Owner=NAME | Address=STREET CITY STATE ZIP | Phone=NUMBER | Email=EMAIL | Date=DATE' },
           { type: 'image_url', image_url: { url: imageData } }
         ]}],
         max_tokens: 1500
