@@ -269,12 +269,6 @@ app.post('/api/extract-data', async (req, res) => {
     
     console.log('AI response:', text);
     
-    // Parse using Field: Value format (old style)
-    var field = function(n) { 
-      var m = text.match(new RegExp('(?:Field:\\s*)?' + n + ':\\s*(.+)', 'i')); 
-      return m ? m[1].trim() : ''; 
-    };
-    
     var owner = field('Owner') || field('Name') || '';
     var fullAddress = field('Address') || '';
     var phone = field('Phone') || '';
