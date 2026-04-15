@@ -242,7 +242,7 @@ app.post('/api/extract-data', async (req, res) => {
       body: JSON.stringify({
         model: 'anthropic/claude-3-haiku',
         messages: [{ role: 'user', content: [
-          { type: 'text', text: 'Extract from contract: Owner, StreetAddress, City, State, ZipCode, Phone, Email, Date, TotalCost, TOOP, DripEdgeColor, VentColor. Format: Owner:Value Street:Value City:Value State:Value Zip:Value Phone:Value Email:Value Date:Value TotalCost:Value TOOP:Value DripEdge:Value VentColor:Value' },
+          { type: 'text', text: 'Extract from contract: Owner, FullAddress (street,city,state,zip all together), Phone, Email, Date, TotalCost, TOOP, DripEdgeColor, VentColor. Format: Owner:Value Address:Value Phone:Value Email:Value Date:Value TotalCost:Value TOOP:Value DripEdge:Value VentColor:Value' },
           { type: 'image_url', image_url: { url: imageData } }
         ]}],
         max_tokens: 2000
@@ -273,20 +273,8 @@ app.post('/api/extract-data', async (req, res) => {
     var dripEdgeColor = field('DripEdge') || '';
     var ventilationColor = field('VentColor') || '';
     
-    // Combine address parts into full address
-    var street = field('Street') || '';
-    var city = field('City') || '';
-    var state = field('State') || '';
-    var zip = field('Zip') || '';
-    var fullAddress = '';
-    if (street) {
-      fullAddress = street;
-      if (city) fullAddress += ', ' + city;
-      if (state) fullAddress += ', ' + state;
-      if (zip) fullAddress += ' ' + zip;
-    } else {
-      fullAddress = field('Address') || '';
-    }
+    // Use the full address as-is
+    var fullAddress = field('Address') || '';
     
     res.json({ success: true, data: {
       owner: owner,
