@@ -224,10 +224,7 @@ app.post('/api/request-install', async (req, res) => {
 app.post('/api/extract-data', async (req, res) => {
   try {
     const apiKey = process.env.OPENROUTER_API_KEY || process.env.openrouter_api_key;
-    if (!apiKey) {
-      console.log('Looking for API key, env vars with api:', Object.keys(process.env).filter(k => k.toLowerCase().includes('api')));
-      return res.status(500).json({ error: 'API key not configured' });
-    }
+    if (!apiKey) return res.status(500).json({ error: 'API key not configured' });
     
     const { file, isPdf } = req.body;
     if (!file) return res.status(400).json({ error: 'No file provided' });
@@ -236,64 +233,39 @@ app.post('/api/extract-data', async (req, res) => {
     const pages = file.split('||PAGE||');
     const imageData = isPdf ? 'data:image/png;base64,' + pages[0] : 'data:image/jpeg;base64,' + file;
     
-    // Add timeout
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000);
-    
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey, 'HTTP-Referer': 'https://yh-hammer.onrender.com', 'X-Title': 'Yellow Hammer' },
       body: JSON.stringify({
         model: 'anthropic/claude-3-haiku',
         messages: [{ role: 'user', content: [
-          { type: 'text', text: 'Extract from this contract: Owner Name, Property Address, Phone, Email, Contract Date. Format: Owner:Value Address:Value Phone:Value Email:Value Date:Value
+          { type: 'text', text: 'Extract from this contract: Owner Name, Property Address (street, city, state, zip), Phone Number, Email, Contract Date, Total Contract Amount, T.O.O.P (total out of pocket), Drip Edge Color, Ventilation Color. Format each as: Owner: Value, Address: Value, Phone: Value, Email: Value, Contract Date: Value, Total Cost: Value, T.O.O.P: Value, Drip Edge Color: Value, Ventilation Color: Value' },
           { type: 'image_url', image_url: { url: imageData } }
         ]}],
-        max_tokens: 1500
-      }),
-      signal: controller.signal
+        max_tokens: 2000
+      })
     });
-    clearTimeout(timeout);
     
-    if (!response.ok) {
-      const errText = await response.text();
-      console.log('AI Error:', response.status, errText);
-      return res.status(500).json({ error: 'AI extraction failed: ' + response.status });
-    }
+    if (!response.ok) return res.status(500).json({ error: 'AI extraction failed' });
     
     const data = await response.json();
     const text = data.choices[0].message.content || '';
     
-    const field = function(n) { 
-      var m = text.match(new RegExp(n + ':([^|\\n]+)', 'i')); 
-      return m ? m[1].trim() : ''; 
-    };
+    const field = function(n) { var m = text.match(new RegExp('(?:Field:\\s*)?' + n + ':\\s*(.+)', 'i')); return m ? m[1].trim() : ''; };
     var amounts = text.match(/\$[\d,]+(?:\.\d{2})?/g) || [];
     
     console.log('AI response:', text);
     
-    var owner = field('Owner') || field('Name') || '';
-    var fullAddress = field('Address') || '';
-    var phone = field('Phone') || '';
-    var email = field('Email') || '';
-    var contractDate = field('Contract Date') || field('Date') || '';
-    
-    // Default the rest
-    var totalCost = '0';
-    var toooP = '0';
-    var dripEdgeColor = '';
-    var ventilationColor = '';
-    
     res.json({ success: true, data: {
-      owner: owner,
-      address: fullAddress || field('Address') || '',
-      phone: phone,
-      email: email,
-      totalCost: totalCost,
-      toooP: toooP,
-      contractDate: contractDate,
-      dripEdgeColor: dripEdgeColor,
-      ventilationColor: ventilationColor,
+      owner: field('Owner') || field('Name') || '',
+      address: [field('Address'), field('City'), field('State'), field('Zip')].filter(function(x) { return x; }).join(', ') || field('Address') || '',
+      phone: field('Phone') || '',
+      email: field('Email') || '',
+      totalCost: field('Total Cost') ? field('Total Cost').replace(/[$,]/g, '') : (amounts[0] ? amounts[0].replace(/[$,]/g, '') : '0'),
+      toooP: field('T.O.O.P') ? field('T.O.O.P').replace(/[$,]/g, '') : (amounts[1] ? amounts[1].replace(/[$,]/g, '') : '0'),
+      contractDate: field('Contract Date') || '',
+      dripEdgeColor: field('Drip Edge Color') || '',
+      ventilationColor: field('Ventilation Color') || '',
       manufacturer: '',
       shingleType: '',
       shingleColor: '',
@@ -336,10 +308,7 @@ app.post('/api/save-extracted', async (req, res) => {
     ];
     
     var r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: month + '!A:AE' });
-    var dataRows = r.data.values ? r.data.values.length : 0;
-    // Row 1 is header, so if there's only 1 row (just header), next data goes to row 2
-    // Otherwise, add 2 to skip header and go to next empty row
-    var nextRow = dataRows <= 1 ? 2 : dataRows + 1;
+    var nextRow = (r.data.values ? r.data.values.length : 0) + 2;
     
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
