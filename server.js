@@ -100,11 +100,11 @@ app.post('/api/save-extracted', async (req, res) => {
     
     if (!month || !owner) return res.status(400).json({ error: 'Missing month or owner' });
     
+    // 31 columns: A through AE
     const rowData = [
-      
-      address || '', '', contractDate || '', '', '', owner || '', totalCost || '', '0', '0', '0', totalCost || '', toooP || '', '0', '0', '',
-      '', phone || '', email || '', '', dripEdgeColor || '', ventilationColor || '', manufacturer || '', shingleType || '', shingleColor || '', '', notes || '',
-      '', '', '', '', '', ''
+      address, '', contractDate, '', '', owner, totalCost, '0', '0', '0', totalCost, toooP, '0', '0', '', '',
+      phone, email, '', dripEdgeColor, ventilationColor, manufacturer, shingleType, shingleColor, '', notes,
+      '', '', '', '', ''
     ];
     
     const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A:AE` });
@@ -120,6 +120,8 @@ app.post('/api/save-extracted', async (req, res) => {
     res.json({ success: true, month, owner });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
   }
 });
 
