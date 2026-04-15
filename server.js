@@ -308,7 +308,10 @@ app.post('/api/save-extracted', async (req, res) => {
     ];
     
     var r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: month + '!A:AE' });
-    var nextRow = (r.data.values ? r.data.values.length : 0) + 2;
+    var dataRows = r.data.values ? r.data.values.length : 0;
+    // Row 1 is header, so if there's only 1 row (just header), next data goes to row 2
+    // Otherwise, add 2 to skip header and go to next empty row
+    var nextRow = dataRows <= 1 ? 2 : dataRows + 1;
     
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
