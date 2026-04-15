@@ -285,11 +285,23 @@ app.post('/api/save-extracted', async (req, res) => {
     var manufacturer = req.body.manufacturer || '';
     var shingleType = req.body.shingleType || '';
     var shingleColor = req.body.shingleColor || '';
+    var dripEdgeColor = req.body.dripEdgeColor || '';
+    var ventilationColor = req.body.ventilationColor || '';
     var notes = req.body.notes || '';
     
     if (!month || !owner) return res.status(400).json({ error: 'Missing month or owner' });
     
-    var rowData = [address, '', contractDate, '', '', owner, totalCost, '0', '0', '0', totalCost, toooP, '0', '0', '', '', phone, email, '', '', '', '', '', '', manufacturer, shingleType, shingleColor, '', notes];
+    // Columns: A-Z (0-25)
+    // A=address, B=certOfComp, C=contractDate, D=estimateDate, E=installDate
+    // F=owner, G=totalCost, H=requiredDownPayment, I=financeAmount, J=additionalExpense
+    // K=totalBalanceDue, L=toooP, M=depAmtHeld, N=amountDue, O=pmntMethod
+    // P=phone, Q=email, R=datePaid, S=checkNum, T=amountPaid
+    // U=dripEdgeColor, V=ventilationColor, W=manufacturer, X=shingleType, Y=shingleColor, Z=estimatedSquares, AA=notes
+    var rowData = [
+      address, '', contractDate, '', '', owner, totalCost, '0', '0', '0', 
+      totalCost, toooP, '0', '0', '', '', phone, email, '', '', '', '', '', '',
+      dripEdgeColor, ventilationColor, manufacturer, shingleType, shingleColor, '', notes
+    ];
     
     var r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: month + '!A:AE' });
     var nextRow = (r.data.values ? r.data.values.length : 0) + 2;
