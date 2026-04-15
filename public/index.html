@@ -4,426 +4,293 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Yellow Hammer Properties</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
-    body { background: #1a1a2e; color: #fff; min-height: 100vh; padding: 20px; }
-    .header { text-align: center; margin-bottom: 30px; }
-    .header h1 { color: #f4d03f; font-size: 2.5rem; text-transform: uppercase; letter-spacing: 3px; }
-    .header img { height: 80px; margin-bottom: 10px; }
-    
-    .btn-group { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 30px; }
-    .btn { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: bold; transition: 0.2s; }
-    .btn-primary { background: #f4d03f; color: #1a1a2e; }
-    .btn-primary:hover { background: #d4b12f; }
-    .btn-secondary { background: #e74c3c; color: #fff; }
-    .btn-secondary:hover { background: #c0392b; }
-    .btn-success { background: #27ae60; color: #fff; }
-    .btn-success:hover { background: #1e8449; }
-    .btn-info { background: #3498db; color: #fff; }
-    .btn-info:hover { background: #2980b9; }
-    
-    .panel { background: #16213e; border-radius: 12px; padding: 20px; margin-bottom: 20px; display: none; }
-    .panel.active { display: block; }
-    .panel h2 { color: #f4d03f; margin-bottom: 15px; }
-    
-    .form-group { margin-bottom: 15px; }
-    .form-group label { display: block; margin-bottom: 5px; color: #aaa; }
-    .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #333; border-radius: 6px; background: #0f3460; color: #fff; }
-    .form-group input[type="file"] { background: #0f3460; }
-    
-    .jobs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
-    .job-card { background: #0f3460; padding: 15px; border-radius: 8px; border-left: 4px solid #f4d03f; }
-    .job-card h3 { color: #f4d03f; margin-bottom: 10px; }
-    .job-card p { margin: 5px 0; color: #ccc; }
-    .job-card .actions { margin-top: 10px; display: flex; gap: 5px; flex-wrap: wrap; }
-    .job-card .btn { padding: 8px 12px; font-size: 0.85rem; }
-    
-    .month-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
-    .month-tab { padding: 8px 16px; background: #0f3460; border: none; border-radius: 6px; color: #fff; cursor: pointer; }
-    .month-tab.active { background: #f4d03f; color: #1a1a2e; }
-    
-    .edit-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
-    .edit-form .form-group { margin-bottom: 10px; }
-    .edit-form .full-width { grid-column: 1 / -1; }
-    
-    #message { position: fixed; top: 20px; right: 20px; padding: 15px 25px; border-radius: 8px; z-index: 1000; display: none; }
-    #message.success { background: #27ae60; display: block; }
-    #message.error { background: #e74c3c; display: block; }
+    body { background: #0a0a0a; min-height: 100vh; }
+    .glass { background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
+    .btn-primary { background: linear-gradient(135deg,#eab308,#ca8a04); }
+    .btn-primary:hover { transform: translateY(-2px); }
+    .btn-secondary { background: linear-gradient(135deg,#3b82f6,#2563eb); }
+    .btn-danger { background: linear-gradient(135deg,#ef4444,#dc2626); }
+    .logo-glow { filter: drop-shadow(0 0 20px rgba(234,179,8,0.4)); }
   </style>
 </head>
-<body>
-  <div class="header">
-    <img src="/LOGO.png" alt="Logo">
-    <h1>Yellow Hammer Properties</h1>
-  </div>
-  
-  <div class="btn-group">
-    <button class="btn btn-primary" onclick="showPanel('upload')">📤 Upload Contract</button>
-    <button class="btn btn-success" onclick="showPanel('request')">📋 Request Estimate</button>
-    <button class="btn btn-info" onclick="showPanel('add-estimate')">📝 Add Estimate</button>
-    <button class="btn btn-info" onclick="showPanel('add-install')">📅 Add Install Date</button>
-    <button class="btn btn-secondary" onclick="showPanel('jobs')">📋 View Jobs</button>
-    <button class="btn btn-secondary" onclick="toggleEditRecords()">✏️ Edit Records</button>
+<body class="bg-neutral-950">
+  <div class="py-8 px-4 text-center">
+    <img src="LOGO.png" alt="Yellow Hammer" class="h-28 mx-auto mb-3 logo-glow" onerror="this.style.display='none';this.nextElementSibling.style.display='block'" onload="this.nextElementSibling.style.display='none'">
+    <div class="text-5xl font-black" style="display:none;"><span class="text-yellow-500">YELLOW</span><span class="text-white">HAMMER</span></div>
   </div>
 
-  <div id="message"></div>
-
-  <!-- Upload Panel -->
-  <div id="upload-panel" class="panel">
-    <h2>📤 Upload Contract</h2>
-    <div class="form-group">
-      <label>Select Contract Image</label>
-      <input type="file" id="contract-file" accept="image/*,.pdf">
+  <div class="max-w-md mx-auto px-4 pb-8">
+    <!-- Main Menu -->
+    <div id="menu" class="grid gap-5">
+      <button id="upload-btn" class="btn-primary py-7 px-5 rounded-3xl text-white font-bold text-xl flex items-center justify-center gap-4">
+        <span>📷 Upload Contract</span>
+      </button>
+      
+      <button onclick="showViewJobs()" class="btn-secondary py-5 px-5 rounded-2xl text-white font-bold text-lg">
+        📋 View Jobs
+      </button>
     </div>
-    <button class="btn btn-primary" onclick="uploadContract()">Upload & Extract</button>
+
+    <!-- Upload Form (hidden initially) -->
+    <div id="upload-form" class="hidden">
+      <button onclick="showMenu()" class="mb-4 text-yellow-500">← Back</button>
+      <div class="glass rounded-2xl p-6">
+        <h2 class="text-white text-xl font-bold mb-4">Confirm Data</h2>
+        
+        <div class="mb-3">
+          <label class="text-gray-400 text-sm">Month:</label>
+          <select id="month" class="w-full bg-gray-800 text-white px-3 py-2 rounded-lg"></select>
+        </div>
+        
+        <div class="space-y-3">
+          <div><label class="text-gray-400 text-sm">Owner:</label><input id="owner" class="w-full bg-gray-800 text-white px-3 py-2 rounded-lg"></div>
+          <div><label class="text-gray-400 text-sm">Address:</label><input id="address" class="w-full bg-gray-800 text-white px-3 py-2 rounded-lg"></div>
+          <div><label class="text-gray-400 text-sm">Phone:</label><input id="phone" class="w-full bg-gray-800 text-white px-3 py-2 rounded-lg"></div>
+          <div><label class="text-gray-400 text-sm">Email:</label><input id="email" class="w-full bg-gray-800 text-white px-3 py-2 rounded-lg"></div>
+          <div><label class="text-gray-400 text-sm">Contract Date:</label><input type="date" id="contractDate" class="w-full bg-gray-800 text-white px-3 py-2 rounded-lg"></div>
+          <div><label class="text-gray-400 text-sm">Total Cost:</label><input id="totalCost" class="w-full bg-gray-800 text-white px-3 py-2 rounded-lg"></div>
+          <div><label class="text-gray-400 text-sm">T.O.O.P:</label><input id="toooP" class="w-full bg-gray-800 text-white px-3 py-2 rounded-lg"></div>
+          <div><label class="text-gray-400 text-sm">Drip Edge Color:</label><input id="dripEdgeColor" class="w-full bg-gray-800 text-white px-3 py-2 rounded-lg"></div>
+          <div><label class="text-gray-400 text-sm">Ventilation Color:</label><input id="ventilationColor" class="w-full bg-gray-800 text-white px-3 py-2 rounded-lg"></div>
+          <div><label class="text-gray-400 text-sm">Notes:</label><textarea id="notes" class="w-full bg-gray-800 text-white px-3 py-2 rounded-lg"></textarea></div>
+        </div>
+        
+        <button onclick="saveJob()" class="btn-primary w-full py-3 mt-6 rounded-xl text-white font-bold">💾 Save to Spreadsheet</button>
+      </div>
+    </div>
+
+    <!-- Jobs List (hidden initially) -->
+    <div id="jobs-view" class="hidden">
+      <button onclick="showMenu()" class="mb-4 text-yellow-500">← Back</button>
+      <h2 class="text-white text-2xl font-bold mb-4">Job Records</h2>
+      <div id="month-tabs" class="flex flex-wrap gap-2 mb-4"></div>
+      <div id="jobs-list" class="space-y-3"></div>
+    </div>
+
+    <!-- Progress -->
+    <div id="progress" class="hidden mt-6 text-center">
+      <div class="glass rounded-2xl p-8">
+        <div class="animate-spin h-12 w-12 border-4 border-yellow-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+        <p class="text-yellow-500" id="progress-text">Processing...</p>
+      </div>
+    </div>
   </div>
 
-  <!-- Request Estimate Panel -->
-  <div id="request-panel" class="panel">
-    <h2>📋 Request Estimate</h2>
-    <p style="color:#aaa;margin-bottom:15px;">Select a job to request an estimate:</p>
-    <div id="request-jobs"></div>
-  </div>
-
-  <!-- Add Estimate Panel -->
-  <div id="add-estimate-panel" class="panel">
-    <h2>📝 Add Estimate</h2>
-    <div class="form-group">
-      <label>Select Job</label>
-      <select id="estimate-job-select" onchange="loadEstimateJob()">
-        <option value="">-- Select Job --</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>Estimate Date</label>
-      <input type="date" id="estimate-date">
-    </div>
-    <div class="form-group">
-      <label>Estimated Squares</label>
-      <input type="text" id="estimate-squares" placeholder="e.g., 32">
-    </div>
-    <div class="form-group">
-      <label>Contractor</label>
-      <input type="text" id="estimate-contractor" placeholder="Contractor name">
-    </div>
-    <div class="form-group">
-      <label>Paid Amount ($)</label>
-      <input type="text" id="estimate-amount" placeholder="0.00">
-    </div>
-    <button class="btn btn-primary" onclick="addEstimate()">Save Estimate</button>
-  </div>
-
-  <!-- Add Install Date Panel -->
-  <div id="add-install-panel" class="panel">
-    <h2>📅 Add Install Date</h2>
-    <div class="form-group">
-      <label>Select Job</label>
-      <select id="install-job-select" onchange="loadInstallJob()">
-        <option value="">-- Select Job --</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>Install Date</label>
-      <input type="date" id="install-date">
-    </div>
-    <button class="btn btn-primary" onclick="addInstallDate()">Save Install Date</button>
-  </div>
-
-  <!-- View Jobs Panel -->
-  <div id="jobs-panel" class="panel">
-    <h2>📋 View All Jobs</h2>
-    <div class="month-tabs" id="month-tabs"></div>
-    <div id="jobs-list"></div>
-  </div>
-
-  <!-- Edit Records Panel -->
-  <div id="edit-panel" class="panel">
-    <h2>✏️ Edit Records</h2>
-    <div class="form-group">
-      <label>Select Job to Edit</label>
-      <select id="edit-job-select" onchange="loadEditJob()">
-        <option value="">-- Select Job --</option>
-      </select>
-    </div>
-    <div id="edit-form" class="edit-form" style="display:none;">
-      <!-- All 25 fields (A-Y + AA-AE) -->
-      <div class="form-group"><label>Address (A)</label><input type="text" id="edit-A"></div>
-      <div class="form-group"><label>Cert Of Comp (B)</label><input type="text" id="edit-B"></div>
-      <div class="form-group"><label>Contract Date (C)</label><input type="text" id="edit-C"></div>
-      <div class="form-group"><label>Estimate Date (D)</label><input type="text" id="edit-D"></div>
-      <div class="form-group"><label>Install Date (E)</label><input type="text" id="edit-E"></div>
-      <div class="form-group"><label>Owner (F)</label><input type="text" id="edit-F"></div>
-      <div class="form-group"><label>Total Cost (G)</label><input type="text" id="edit-G"></div>
-      <div class="form-group"><label>Req Down Pmt (H)</label><input type="text" id="edit-H"></div>
-      <div class="form-group"><label>Finance Amt (I)</label><input type="text" id="edit-I"></div>
-      <div class="form-group"><label>Add Expense (J)</label><input type="text" id="edit-J"></div>
-      <div class="form-group"><label>Total Balance (K)</label><input type="text" id="edit-K"></div>
-      <div class="form-group"><label>T.O.O.P (L)</label><input type="text" id="edit-L"></div>
-      <div class="form-group"><label>DEP Amt Held (M)</label><input type="text" id="edit-M"></div>
-      <div class="form-group"><label>Amount Due (N)</label><input type="text" id="edit-N"></div>
-      <div class="form-group"><label>Pmnt Method (O)</label><input type="text" id="edit-O"></div>
-      <div class="form-group"><label>Date Paid (Q)</label><input type="text" id="edit-Q"></div>
-      <div class="form-group"><label>Check # (R)</label><input type="text" id="edit-R"></div>
-      <div class="form-group"><label>Paid Amt (S)</label><input type="text" id="edit-S"></div>
-      <div class="form-group"><label>Drip Edge (T)</label><input type="text" id="edit-T"></div>
-      <div class="form-group"><label>Ventilation (U)</label><input type="text" id="edit-U"></div>
-      <div class="form-group"><label>Manufacturer (V)</label><input type="text" id="edit-V"></div>
-      <div class="form-group"><label>Shingle Type (W)</label><input type="text" id="edit-W"></div>
-      <div class="form-group"><label>Shingle Color (X)</label><input type="text" id="edit-X"></div>
-      <div class="form-group"><label>Est Squares (Y)</label><input type="text" id="edit-Y"></div>
-      <div class="form-group"><label>Notes (Z)</label><input type="text" id="edit-Z"></div>
-      <div class="form-group"><label>Permit Cost (AA)</label><input type="text" id="edit-AA"></div>
-      <button class="btn btn-success full-width" onclick="saveEditJob()">💾 Save Changes</button>
-    </div>
-  </div>
+  <!-- Hidden file input -->
+  <input type="file" id="file-input" accept="image/*,.pdf" style="position:absolute;opacity:0;width:1px;height:1px;">
 
   <script>
-    let allJobs = {};
-    let currentEditMonth = '';
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const API = window.location.origin;
 
-    function showPanel(id) {
-      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-      document.getElementById(id + '-panel').classList.add('active');
-      if (id === 'jobs' || id === 'request' || id === 'add-estimate' || id === 'add-install' || id === 'edit') loadJobs();
-    }
+    // Set up month dropdown
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const currentMonth = new Date().toLocaleString('default', { month: 'long' });
+    document.getElementById('month').innerHTML = months.map(m => 
+      '<option value="' + m + '"' + (m === currentMonth ? ' selected' : '') + '>' + m + '</option>'
+    ).join('');
 
-    function toggleEditRecords() {
-      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-      document.getElementById('edit-panel').classList.add('active');
-      loadJobs();
-    }
+    // Upload button click
+    document.getElementById('upload-btn').addEventListener('click', function() {
+      document.getElementById('file-input').click();
+    });
 
-    async function loadJobs() {
-      const res = await fetch('/api/jobs');
-      allJobs = await res.json();
+    // File input change
+    document.getElementById('file-input').addEventListener('change', function(e) {
+      if (e.target.files.length > 0) {
+        processFile(e.target.files[0]);
+      }
+    });
+
+    async function processFile(file) {
+      showProgress('Reading file...');
       
-      const months = Object.keys(allJobs).sort((a, b) => {
-        const order = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-        return order.indexOf(a) - order.indexOf(b);
-      });
+      const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      let imageData;
       
-      // Populate all selects
-      const selects = ['estimate-job-select', 'install-job-select', 'edit-job-select', 'request-jobs'];
-      selects.forEach(s => {
-        const el = document.getElementById(s);
-        if (el && s !== 'request-jobs') {
-          el.innerHTML = '<option value="">-- Select Job --</option>';
+      try {
+        if (isPdf) {
+          showProgress('Converting PDF...');
+          imageData = await convertPdfToImage(file);
+        } else {
+          imageData = await readFileAsBase64(file);
         }
-      });
-      
-      let allJobsList = [];
-      months.forEach(month => {
-        allJobs[month].forEach(job => {
-          if (job.address) {
-            const opt = { month, row: job.row, address: job.address, owner: job.owner };
-            allJobsList.push(opt);
-            ['estimate-job-select', 'install-job-select', 'edit-job-select'].forEach(sid => {
-              const sel = document.getElementById(sid);
-              if (sel) {
-                const o = document.createElement('option');
-                o.value = JSON.stringify(opt);
-                o.text = `${job.address} - ${job.owner}`;
-                sel.appendChild(o);
-              }
-            });
-          }
-        });
-      });
-      
-      // Request jobs as cards
-      const reqDiv = document.getElementById('request-jobs');
-      if (reqDiv) {
-        reqDiv.innerHTML = allJobsList.length ? '' : '<p>No jobs found</p>';
-        allJobsList.forEach(j => {
-          const card = document.createElement('div');
-          card.className = 'job-card';
-          card.style.marginBottom = '10px';
-          card.innerHTML = `<p><strong>${j.address}</strong></p><p>${j.owner}</p><button class="btn btn-success" onclick='requestEstimate(${JSON.stringify(j)})'>Request</button>`;
-          reqDiv.appendChild(card);
-        });
-      }
-      
-      // Month tabs for View Jobs
-      const tabsDiv = document.getElementById('month-tabs');
-      if (tabsDiv) {
-        tabsDiv.innerHTML = months.map(m => `<button class="month-tab ${m === 'April' ? 'active' : ''}" onclick="showMonth('${m}')">${m}</button>`).join('');
-        showMonth('April');
-      }
-    }
-
-    function showMonth(month) {
-      document.querySelectorAll('.month-tab').forEach(t => t.classList.remove('active'));
-      event.target.classList.add('active');
-      
-      const list = document.getElementById('jobs-list');
-      const jobs = allJobs[month] || [];
-      list.innerHTML = jobs.length ? '' : '<p>No jobs this month</p>';
-      
-      jobs.forEach(job => {
-        if (job.address) {
-          const card = document.createElement('div');
-          card.className = 'job-card';
-          card.innerHTML = `
-            <h3>${job.address}</h3>
-            <p><strong>Owner:</strong> ${job.owner}</p>
-            <p><strong>Phone:</strong> ${job.phone}</p>
-            <p><strong>Total:</strong> $${job.totalCost}</p>
-            <p><strong>T.O.O.P:</strong> $${job.tooop}</p>
-            <div class="actions">
-              <button class="btn btn-success" onclick='requestEstimate(${JSON.stringify({month, row:job.row, address:job.address, owner:job.owner})})'>Request Est</button>
-              <button class="btn btn-info" onclick='selectForEstimate(${JSON.stringify({month, row:job.row, address:job.address, owner:job.owner})})'>Add Est</button>
-              <button class="btn btn-info" onclick='selectForInstall(${JSON.stringify({month, row:job.row, address:job.address, owner:job.owner})})'>Add Install</button>
-              <button class="btn btn-secondary" onclick='selectForEdit(${JSON.stringify({month, row:job.row, address:job.address, owner:job.owner})})'>Edit</button>
-            </div>`;
-          list.appendChild(card);
+        
+        showProgress('Extracting data with AI...');
+        const result = await extractData(imageData, isPdf);
+        
+        if (result.success && result.data) {
+          showUploadForm(result.data);
+        } else {
+          alert('Error: ' + (result.error || 'Could not extract data'));
+          showMenu();
         }
-      });
-    }
-
-    async function uploadContract() {
-      const file = document.getElementById('contract-file').files[0];
-      if (!file) return showMessage('Please select a file', 'error');
-      
-      showMessage('Processing...', 'success');
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      const res = await fetch('/api/upload', { method: 'POST', body: formData });
-      const data = await res.json();
-      
-      if (data.error) {
-        showMessage(data.error, 'error');
-      } else {
-        showMessage(`Saved to ${data.month} for ${data.owner}`, 'success');
-        document.getElementById('contract-file').value = '';
+      } catch (err) {
+        alert('Error: ' + err.message);
+        showMenu();
       }
     }
 
-    async function requestEstimate(job) {
-      const res = await fetch('/api/request-estimate', {
+    function readFileAsBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function convertPdfToImage(file) {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+      const page = await pdf.getPage(1);
+      const viewport = page.getViewport({ scale: 2 });
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const context = canvas.getContext('2d');
+      await page.render({ canvasContext: context, viewport: viewport }).promise;
+      return canvas.toDataURL('image/jpeg').split(',')[1];
+    }
+
+    async function extractData(imageData, isPdf) {
+      const response = await fetch(API + '/api/extract-data', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(job)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ file: imageData, isPdf: isPdf })
       });
-      showMessage('Estimate requested!', 'success');
-    }
-
-    function selectForEstimate(job) {
-      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-      document.getElementById('add-estimate-panel').classList.add('active');
-      document.querySelectorAll('#estimate-job-select option').forEach(o => {
-        if (o.value && JSON.parse(o.value).row === job.row && JSON.parse(o.value).month === job.month) o.selected = true;
-      });
-      loadEstimateJob();
-    }
-
-    function selectForInstall(job) {
-      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-      document.getElementById('add-install-panel').classList.add('active');
-      document.querySelectorAll('#install-job-select option').forEach(o => {
-        if (o.value && JSON.parse(o.value).row === job.row && JSON.parse(o.value).month === job.month) o.selected = true;
-      });
-      loadInstallJob();
-    }
-
-    function selectForEdit(job) {
-      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-      document.getElementById('edit-panel').classList.add('active');
-      document.querySelectorAll('#edit-job-select option').forEach(o => {
-        if (o.value && JSON.parse(o.value).row === job.row && JSON.parse(o.value).month === job.month) o.selected = true;
-      });
-      loadEditJob();
-    }
-
-    async function loadEstimateJob() {
-      const sel = document.getElementById('estimate-job-select');
-      if (!sel.value) return;
-      const job = JSON.parse(sel.value);
-      document.getElementById('estimate-date').value = new Date().toISOString().split('T')[0];
-    }
-
-    async function addEstimate() {
-      const sel = document.getElementById('estimate-job-select');
-      if (!sel.value) return showMessage('Select a job first', 'error');
-      const job = JSON.parse(sel.value);
       
-      await fetch('/api/add-estimate', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          month: job.month,
-          row: job.row,
-          date: document.getElementById('estimate-date').value,
-          squares: document.getElementById('estimate-squares').value,
-          contractor: document.getElementById('estimate-contractor').value,
-          amount: document.getElementById('estimate-amount').value
-        })
-      });
-      showMessage('Estimate added!', 'success');
+      return await response.json();
     }
 
-    async function loadInstallJob() {
-      const sel = document.getElementById('install-job-select');
-      if (!sel.value) return;
-      const job = JSON.parse(sel.value);
-      document.getElementById('install-date').value = new Date().toISOString().split('T')[0];
+    async function saveJob() {
+      const data = {
+        month: document.getElementById('month').value,
+        owner: document.getElementById('owner').value,
+        address: document.getElementById('address').value,
+        phone: document.getElementById('phone').value,
+        email: document.getElementById('email').value,
+        contractDate: document.getElementById('contractDate').value,
+        totalCost: document.getElementById('totalCost').value,
+        toooP: document.getElementById('toooP').value,
+        dripEdgeColor: document.getElementById('dripEdgeColor').value,
+        ventilationColor: document.getElementById('ventilationColor').value,
+        notes: document.getElementById('notes').value
+      };
+      
+      if (!data.month || !data.owner) {
+        alert('Month and Owner are required');
+        return;
+      }
+      
+      showProgress('Saving...');
+      
+      try {
+        const response = await fetch(API + '/api/save-extracted', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          alert('Saved to ' + data.month + '!');
+          location.reload();
+        } else {
+          alert('Error: ' + (result.error || 'Failed to save'));
+          showMenu();
+        }
+      } catch (err) {
+        alert('Error: ' + err.message);
+        showMenu();
+      }
     }
 
-    async function addInstallDate() {
-      const sel = document.getElementById('install-job-select');
-      if (!sel.value) return showMessage('Select a job first', 'error');
-      const job = JSON.parse(sel.value);
+    async function showViewJobs() {
+      showProgress('Loading jobs...');
       
-      await fetch('/api/add-install', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          month: job.month,
-          row: job.row,
-          installDate: document.getElementById('install-date').value
-        })
-      });
-      showMessage('Install date added!', 'success');
+      try {
+        const response = await fetch(API + '/api/jobs');
+        const jobs = await response.json();
+        
+        const monthList = Object.keys(jobs);
+        const defaultMonth = monthList.includes('April') ? 'April' : monthList[0];
+        
+        document.getElementById('month-tabs').innerHTML = monthList.map(m => 
+          '<button onclick="showMonth(\'' + m + '\')" class="px-4 py-2 rounded-lg font-semibold text-sm">' + m + '</button>'
+        ).join('');
+        
+        showMonth(defaultMonth);
+        
+        document.getElementById('menu').classList.add('hidden');
+        document.getElementById('jobs-view').classList.remove('hidden');
+      } catch (err) {
+        alert('Error loading jobs: ' + err.message);
+      }
+      
+      hideProgress();
     }
 
-    async function loadEditJob() {
-      const sel = document.getElementById('edit-job-select');
-      if (!sel.value) return;
-      const job = JSON.parse(sel.value);
-      currentEditMonth = job.month;
-      
-      const res = await fetch(`/api/job/${job.month}/${job.row}`);
-      const data = await res.json();
-      
-      document.getElementById('edit-form').style.display = 'grid';
-      const fields = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','Q','R','S','T','U','V','W','X','Y','Z','AA'];
-      fields.forEach((f, i) => {
-        const el = document.getElementById('edit-' + f);
-        if (el) el.value = data.data[i] || '';
-      });
+    async function showMonth(month) {
+      try {
+        const response = await fetch(API + '/api/jobs');
+        const jobs = await response.json();
+        const monthJobs = jobs[month] || [];
+        
+        // Update tab styles
+        document.querySelectorAll('#month-tabs button').forEach(btn => {
+          btn.className = btn.textContent === month 
+            ? 'px-4 py-2 rounded-lg font-semibold text-sm bg-yellow-500 text-black'
+            : 'px-4 py-2 rounded-lg font-semibold text-sm bg-white/10 text-gray-400';
+        });
+        
+        if (monthJobs.length === 0) {
+          document.getElementById('jobs-list').innerHTML = '<p class="text-gray-500">No jobs this month</p>';
+          return;
+        }
+        
+        document.getElementById('jobs-list').innerHTML = monthJobs.map(j => 
+          '<div class="glass rounded-xl p-4"><div class="text-white font-bold">' + (j.owner || 'Unknown') + '</div>' +
+          '<div class="text-gray-400 text-sm">' + (j.address || 'No address') + '</div></div>'
+        ).join('');
+      } catch (err) {
+        console.error(err);
+      }
     }
 
-    async function saveEditJob() {
-      const sel = document.getElementById('edit-job-select');
-      if (!sel.value) return showMessage('Select a job first', 'error');
-      const job = JSON.parse(sel.value);
+    function showUploadForm(data) {
+      hideProgress();
+      document.getElementById('menu').classList.add('hidden');
+      document.getElementById('upload-form').classList.remove('hidden');
       
-      const fields = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','Q','R','S','T','U','V','W','X','Y','Z','AA'];
-      const data = fields.map(f => document.getElementById('edit-' + f).value);
-      
-      await fetch('/api/update-job', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ month: job.month, row: job.row, data })
-      });
-      showMessage('Job updated!', 'success');
+      // Fill form with extracted data
+      document.getElementById('owner').value = data.owner || '';
+      document.getElementById('address').value = data.address || '';
+      document.getElementById('phone').value = data.phone || '';
+      document.getElementById('email').value = data.email || '';
+      document.getElementById('totalCost').value = data.totalCost || '';
+      document.getElementById('toooP').value = data.toooP || '';
+      document.getElementById('contractDate').value = data.contractDate || '';
     }
 
-    function showMessage(text, type) {
-      const msg = document.getElementById('message');
-      msg.textContent = text;
-      msg.className = type;
-      setTimeout(() => msg.className = '', 3000);
+    function showMenu() {
+      document.getElementById('menu').classList.remove('hidden');
+      document.getElementById('upload-form').classList.add('hidden');
+      document.getElementById('jobs-view').classList.add('hidden');
+      hideProgress();
+    }
+
+    function showProgress(text) {
+      document.getElementById('progress').classList.remove('hidden');
+      document.getElementById('progress-text').textContent = text;
+    }
+
+    function hideProgress() {
+      document.getElementById('progress').classList.add('hidden');
     }
   </script>
 </body>
