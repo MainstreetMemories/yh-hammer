@@ -1,645 +1,177 @@
-  <script>
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    const API = window.location.origin;
-    let pendingData = null;
-
-    function showStatus(msg, err = false) {
-      const el = document.getElementById('status');
-      el.textContent = msg;
-      el.className = `mb-5 p-5 rounded-2xl text-center font-semibold ${err ? 'bg-red-500/20 text-red-300 border border-red-500/30' : 'bg-green-500/20 text-green-300 border border-green-500/30'}`;
-      el.classList.remove('hidden');
-      setTimeout(() => el.classList.add('hidden'), 7000);
-    }
-
-    function showProgress(show, text = 'Processing...') {
-      document.getElementById('progress').className = show ? 'mt-6' : 'hidden';
-      document.getElementById('progress-text').textContent = text;
-    }
-
-    function showMenu() {
-      document.getElementById('menu').classList.remove('hidden');
-      document.getElementById('jobs').classList.add('hidden');
-      document.getElementById('confirm-dialog').classList.add('hidden');
-      document.getElementById('estimate-dialog').classList.add('hidden');
-      document.getElementById('estimate-fields').classList.add('hidden');
-      pendingData = null;
-      
-      // Reset fields after Add Install Date
-      const editInstall = document.getElementById('edit-install-date');
-      if (editInstall) {
-        editInstall.id = 'edit-estimateDate';
-        editInstall.type = 'date';
-        editInstall.parentElement.querySelector('label').textContent = 'Estimate Date:';
-      }
-      const squares = document.getElementById('edit-squares');
-      if (squares) squares.parentElement.style.display = '';
-      const contractor = document.getElementById('edit-primaryContractor');
-      if (contractor) contractor.parentElement.style.display = '';
-      const paid = document.getElementById('edit-paid');
-      if (paid) paid.parentElement.style.display = '';
-    }
-
-    function showJobs() {
-      showProgress(true, 'Loading...');
-      fetch(API + '/api/jobs').then(r => r.json()).then(jobs => {
-        const months = Object.keys(jobs);
-        const current = months.includes('April') ? 'April' : months[0];
-        document.getElementById('month-tabs').innerHTML = months.map(m => `<button onclick="showMonth('${m}')" class="px-5 py-2.5 rounded-xl font-semibold text-sm transition-all ${m === current ? 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/25' : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'}">${m}</button>`).join('');
-        showMonth(current);
-        document.getElementById('menu').classList.add('hidden');
-        document.getElementById('jobs').classList.remove('hidden');
-      }).finally(() => showProgress(false));
-    }
-
-    async function editJob(month, row) {
-      showProgress(true, 'Loading...');
-      try {
-        const response = await fetch(API + '/api/get-job?month=' + month + '&row=' + row);
-        const job = await response.json();
-        if (job) {
-          pendingData = { ...job, month: month, row: row };
-          showConfirmDialog(job);
-          document.getElementById('confirm-dialog').classList.remove('hidden');
-          document.getElementById('jobs').classList.add('hidden');
-        }
-      } catch(err) { showStatus('Error: ' + err.message, true); }
-      showProgress(false);
-    }
-
-    function toggleMonthTabs() {
-      const tabs = document.getElementById('month-tabs');
-      tabs.classList.toggle('hidden');
-    }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yellow Hammer Properties</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: #1a1a2e; color: #fff; font-family: system-ui, sans-serif; }
+    .glass { background: #16213e; }
+    .btn-primary { background: #f4d03f; color: #1a1a2e; }
+    .btn-primary:hover { background: #d4b12f; }
+    .btn-secondary { background: #e74c3c; color: #fff; }
+    .btn-success { background: #27ae60; color: #fff; }
+  </style>
+</head>
+<body class="p-6">
+  <div class="max-w-2xl mx-auto">
+    <h1 class="text-3xl font-bold text-center text-yellow-500 mb-8">Yellow Hammer Properties</h1>
     
-    function showMonth(month) {
-      document.querySelectorAll('#month-tabs button').forEach(btn => {
-        if (btn.textContent === month) {
-          btn.className = 'px-5 py-2.5 rounded-xl font-semibold text-sm transition-all bg-yellow-500 text-black shadow-lg shadow-yellow-500/25';
-        } else {
-          btn.className = 'px-5 py-2.5 rounded-xl font-semibold text-sm transition-all bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white';
-        }
-      });
-      fetch(API + '/api/jobs').then(r => r.json()).then(jobs => {
-        const list = document.getElementById('jobs-list');
-        const monthJobs = jobs[month] || [];
-        const editBtn = (j, m) => '<button onclick="editJob(\'' + m + '\',' + j.row + ')" class="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-bold">Edit</button>';
-        list.innerHTML = monthJobs.length ? monthJobs.map(j => '<div class="glass rounded-xl p-5 card-hover flex justify-between items-center"><div class="flex-1"><div class="text-white font-bold text-lg">' + (j.owner || 'Unknown') + '</div><div class="text-gray-500 text-sm">' + (j.address || 'No address') + '</div><div class="text-yellow-500 font-bold">' + (j.totalCost || '0') + '</div></div>' + editBtn(j, month) + '</div>').join('') : '<p class="text-gray-600">No jobs this month</p>';
-      });
-    }
-
-    function isPdfFile(file) {
-      const type = (file.type || '').toLowerCase();
-      const name = (file.name || '').toLowerCase();
-      return type === 'application/pdf' || name.endsWith('.pdf');
-    }
-
-    async function convertPdfToImages(file, scale = 1.5) {
-      const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      const images = [];
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale });
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
-        await page.render({ canvasContext: context, viewport: viewport }).promise;
-        images.push(canvas.toDataURL('image/jpeg').split(',')[1]);
-      }
-      return images;
-    }
-
-    let estimateSelectedJob = null;
-    
-    async function showRequestInstallModal() {
-      if (!window.jobs || Object.keys(window.jobs).length === 0) {
-        document.getElementById('progress').classList.remove('hidden');
-        const response = await fetch(API + '/api/jobs');
-        window.jobs = await response.json();
-        document.getElementById('progress').classList.add('hidden');
-      }
+    <div id="menu" class="space-y-4">
+      <!-- Upload Button -->
+      <button onclick="handleUpload()" class="btn-primary w-full py-4 rounded-xl font-bold text-xl">
+        📷 Upload Contract
+      </button>
       
-      const months = Object.keys(window.jobs || {});
-      if (months.length === 0) {
-return;
-      }
-      
-      let html = '<p class="text-gray-400 mb-2">Select Month:</p><div class="flex flex-wrap gap-2 mb-4">';
-      html += months.map(m => '<button onclick="showRequestInstallMonth(\''+m+'\')" class="px-3 py-1 bg-gray-700 text-white rounded">' + m + '</button>').join('');
-      html += '</div><button onclick="showMenu()" class="text-yellow-500 font-semibold">← Back to Home</button>';
-      
-      document.getElementById('estimate-job-select').innerHTML = html;
-      document.getElementById('estimate-dialog').classList.remove('hidden');
-      document.getElementById('estimate-fields').classList.add('hidden');
-      document.getElementById('menu').classList.add('hidden');
-      document.getElementById('jobs').classList.add('hidden');
-      document.getElementById('confirm-dialog').classList.add('hidden');
-      document.querySelector('#estimate-dialog h2').textContent = 'Request Install Date';
-    }
-    
-    function showRequestInstallMonth(month) {
-      const jobs = window.jobs[month] || [];
-      let html = '<p class="text-gray-400 mb-2">Select Job:</p><div class="space-y-2 max-h-60 overflow-y-auto">';
-      html += jobs.map((j, i) => '<button onclick="sendInstallRequest(\''+month+'\','+j.row+')" class="w-full text-left p-3 bg-gray-800 rounded-lg hover:bg-gray-700"><div class="text-white font-bold">' + (j.owner || 'Unknown') + '</div><div class="text-gray-400 text-sm">' + (j.address || 'No address') + '</div></button>').join('');
-      html += '</div>';
-      document.getElementById('estimate-job-select').innerHTML = html;
-    }
-    
-    function sendInstallRequest(month, row) {
-      fetch(API + '/api/request-install', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ month, row })
-      }).then(r => r.json()).then(data => {
-        if (data.success) {
-} else {
-}
-        showMenu();
-      });
-    }
-    
-    async function showRequestEstimateModal() {
-      // Load jobs first
-      if (!window.jobs || Object.keys(window.jobs).length === 0) {
-        document.getElementById('progress').classList.remove('hidden');
-        const response = await fetch(API + '/api/jobs');
-        window.jobs = await response.json();
-        document.getElementById('progress').classList.add('hidden');
-      }
-      
-      const months = Object.keys(window.jobs || {});
-      if (months.length === 0) {
-return;
-      }
-      
-      // Show month selection
-      let html = '<p class="text-gray-400 mb-2">Select Month:</p><div class="flex flex-wrap gap-2 mb-4">';
-      html += months.map(m => '<button onclick="showRequestMonth(\''+m+'\')" class="px-3 py-1 bg-gray-700 text-white rounded">' + m + '</button>').join('');
-      html += '</div>';
-      
-      document.getElementById('estimate-job-select').innerHTML = html;
-      document.getElementById('estimate-dialog').classList.remove('hidden');
-      document.getElementById('estimate-fields').classList.add('hidden');
-      document.getElementById('menu').classList.add('hidden');
-      document.getElementById('jobs').classList.add('hidden');
-      document.getElementById('confirm-dialog').classList.add('hidden');
-      document.querySelector('#estimate-dialog h2').textContent = 'Request Estimate';
-    }
-    
-    function showRequestMonth(month) {
-      const jobs = window.jobs[month] || [];
-      let html = '<p class="text-gray-400 mb-2">Select Job:</p><div class="space-y-2 max-h-60 overflow-y-auto">';
-      html += jobs.map((j, i) => '<button onclick="sendEstimateRequest(\''+month+'\','+j.row+')" class="w-full text-left p-3 bg-gray-800 rounded-lg hover:bg-gray-700"><div class="text-white font-bold">' + (j.owner || 'Unknown') + '</div><div class="text-gray-400 text-sm">' + (j.address || 'No address') + '</div></button>').join('');
-      html += '</div>';
-      document.getElementById('estimate-job-select').innerHTML = html;
-    }
-    
-    function sendEstimateRequest(month, row) {
-      fetch(API + '/api/request-estimate', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ month, row })
-      }).then(r => r.json()).then(data => {
-        if (data.success) {
-} else {
-}
-        showMenu();
-      });
-    }
-    
-    async function showInstallDateModal() {
-      if (!window.jobs || Object.keys(window.jobs).length === 0) {
-        document.getElementById('progress').classList.remove('hidden');
-        const response = await fetch(API + '/api/jobs');
-        window.jobs = await response.json();
-        document.getElementById('progress').classList.add('hidden');
-      }
-      
-      const months = Object.keys(window.jobs || {});
-      if (months.length === 0) {
-return;
-      }
-      
-      let html = '<p class="text-gray-400 mb-2">Select Month:</p><div class="flex flex-wrap gap-2 mb-4">';
-      html += months.map(m => '<button onclick="showInstallMonth(\''+m+'\')" class="px-3 py-1 bg-gray-700 text-white rounded">' + m + '</button>').join('');
-      html += '</div>';
-      
-      document.getElementById('estimate-job-select').innerHTML = html;
-      document.getElementById('estimate-dialog').classList.remove('hidden');
-      document.getElementById('estimate-fields').classList.add('hidden');
-      document.getElementById('menu').classList.add('hidden');
-      document.getElementById('jobs').classList.add('hidden');
-      document.getElementById('confirm-dialog').classList.add('hidden');
-      document.querySelector('#estimate-dialog h2').textContent = 'Add Install Date';
-    }
-    
-    function showInstallMonth(month) {
-      const jobs = window.jobs[month] || [];
-      let html = '<p class="text-gray-400 mb-2">Select Job:</p><div class="space-y-2 max-h-60 overflow-y-auto">';
-      html += jobs.map((j, i) => '<button onclick="selectInstallJob(\''+month+'\','+j.row+')" class="w-full text-left p-3 bg-gray-800 rounded-lg hover:bg-gray-700"><div class="text-white font-bold">' + (j.owner || 'Unknown') + '</div><div class="text-gray-400 text-sm">' + (j.address || 'No address') + '</div></button>').join('');
-      html += '</div>';
-      document.getElementById('estimate-job-select').innerHTML = html;
-    }
-    
-    let installSelectedJob = null;
-    
-    function selectInstallJob(month, row) {
-      installSelectedJob = { month, row };
-      document.getElementById('estimate-fields').classList.remove('hidden');
-      document.querySelector('#estimate-dialog h2').textContent = 'Add Install Date';
-      // Update fields for install date
-      document.getElementById('edit-estimateDate').id = 'temp-install-date';
-      document.getElementById('edit-squares').parentElement.style.display = 'none';
-      document.getElementById('edit-primaryContractor').parentElement.style.display = 'none';
-      document.getElementById('edit-paid').parentElement.style.display = 'none';
-      document.getElementById('temp-install-date').type = 'date';
-      document.getElementById('temp-install-date').parentElement.querySelector('label').textContent = 'Install Date:';
-      document.getElementById('temp-install-date').id = 'edit-install-date';
-      
-      // Change save button
-      const saveBtn = document.querySelector('#estimate-fields button');
-      saveBtn.textContent = '💾 Save Install Date';
-      saveBtn.onclick = saveInstallDate;
-    }
-    
-    function saveInstallDate() {
-      if (!installSelectedJob) return;
-      const installDate = document.getElementById('edit-install-date').value;
-      
-      fetch(API + '/api/save-install-date', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ month: installSelectedJob.month, row: installSelectedJob.row, installDate })
-      }).then(r => r.json()).then(data => {
-        if (data.success) {
-} else {
-}
-        showMenu();
-      });
-    }
-    
-    async function showEstimateModal() {
-      // Load jobs if not loaded
-      if (!window.jobs || Object.keys(window.jobs).length === 0) {
-        document.getElementById('progress').classList.remove('hidden');
-        const response = await fetch(API + '/api/jobs');
-        window.jobs = await response.json();
-        document.getElementById('progress').classList.add('hidden');
-      }
-      
-      // First show the dialog with job selection
-      document.getElementById('estimate-dialog').classList.remove('hidden');
-      document.getElementById('jobs').classList.add('hidden');
-      document.getElementById('menu').classList.add('hidden');
-      document.getElementById('confirm-dialog').classList.add('hidden');
-      document.querySelector('#estimate-dialog h2').textContent = 'Add Estimate';
-      
-      // Show month buttons to pick from
-      const months = Object.keys(window.jobs || {});
-      let html = '<p class="text-gray-400 mb-2">Select Month:</p><div class="flex flex-wrap gap-2 mb-4">';
-      html += months.map(m => '<button onclick="showEstimateMonth(\''+m+'\')" class="px-3 py-1 bg-gray-700 text-white rounded">' + m + '</button>').join('');
-      html += '</div>';
-      document.getElementById('estimate-job-select').innerHTML = html;
-      document.getElementById('estimate-fields').classList.add('hidden');
-    }
-    
-    function showEstimateMonth(month) {
-      const jobs = window.jobs[month] || [];
-      let html = '<p class="text-gray-400 mb-2">Select Job:</p><div class="space-y-2 max-h-60 overflow-y-auto">';
-      html += jobs.map((j, i) => '<button onclick="selectEstimateJob(\''+month+'\','+j.row+','+i+')" class="w-full text-left p-3 bg-gray-800 rounded-lg hover:bg-gray-700"><div class="text-white font-bold">' + (j.owner || 'Unknown') + '</div><div class="text-gray-400 text-sm">' + (j.address || 'No address') + '</div></button>').join('');
-      html += '</div>';
-      document.getElementById('estimate-job-select').innerHTML = html;
-    }
-    
-    function selectEstimateJob(month, row, index) {
-      estimateSelectedJob = { month, row };
-      document.getElementById('estimate-fields').classList.remove('hidden');
-      
-      // Load contractors dropdown
-      const select = document.getElementById('edit-primaryContractor');
-      select.innerHTML = '<option value="">Loading...</option>';
-      fetch(API + '/api/contractors').then(r => r.json()).then(contractors => {
-        select.innerHTML = '<option value="">Select Contractor</option>' + 
-          contractors.map(c => '<option value="' + c + '">' + c + '</option>').join('');
-      }).catch(err => {
-        select.innerHTML = '<option value="">Error loading</option>';
-      });
-    }
-    
-    function saveEstimate() {
-      if (!estimateSelectedJob) return;
-      const estimateDate = document.getElementById('edit-estimateDate').value;
-      const squares = document.getElementById('edit-squares').value;
-      const primaryContractor = document.getElementById('edit-primaryContractor').value;
-      const paid = document.getElementById('edit-paid').value;
-      
-      fetch(API + '/api/save-estimate', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ month: estimateSelectedJob.month, row: estimateSelectedJob.row, estimateDate, squares, primaryContractor, paid })
-      }).then(r => r.json()).then(data => {
-        if (data.success) {
-document.getElementById('estimate-dialog').classList.add('hidden');
-          showMenu();
-        } else {
-}
-      });
-    }
-    
-    function cancelEstimate() {
-      document.getElementById('estimate-dialog').classList.add('hidden');
-      showMenu();
-    }
-    
-    async function showEstimateModal_old() {
-      // Fetch jobs first if not loaded
-      if (!window.jobs || Object.keys(window.jobs).length === 0) {
-        document.getElementById('progress').classList.remove('hidden');
-        const response = await fetch(API + '/api/jobs');
-        window.jobs = await response.json();
-        document.getElementById('progress').classList.add('hidden');
-      }
-      
-      const months = Object.keys(window.jobs || {});
-      if (months.length === 0) {
-return;
-      }
-      
-      // Simple prompt for estimate info - can be expanded to full modal
-      // placeholder to remove('Estimate Date (e.g., 4/13/2026):');
-      const month = prompt('Which month is this job in? (' + months.join(', ') + ')');
-      if (!month || !months.includes(month)) {
-return;
-      }
-      
-      const jobs = window.jobs[month];
-      const jobList = jobs.map((j, i) => (i+1) + '. ' + (j.owner || 'Unknown') + ' - ' + (j.address || 'No address')).join('\n');
-      const jobNum = prompt('Which job number?\n' + jobList);
-      if (!jobNum) return;
-      
-      const jobIndex = parseInt(jobNum) - 1;
-      if (jobIndex < 0 || jobIndex >= jobs.length) {
-return;
-      }
-      
-      const row = jobs[jobIndex].row;
-      
-      // Save the estimate data
-      fetch(API + '/api/save-estimate', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ month, row, estimateDate, squares, permitCost, primaryContractor, paid })
-      }).then(r => r.json()).then(data => {
-        if (data.success) {
-showMenu();
-        } else {
-}
-      });
-    }
-    
-    const ALL_FIELDS = [
-  { key: 'address', label: 'Address' },
-  { key: 'certOfComp', label: 'Cert Of Comp' },
-  { key: 'contractDate', label: 'Contract Date' },
-  { key: 'estimateDate', label: 'Estimate Date' },
-  { key: 'installDate', label: 'Install Date' },
-  { key: 'owner', label: 'Owner' },
-  { key: 'totalCost', label: 'Total Cost' },
-  { key: 'requiredDownPayment', label: 'Required Down Payment' },
-  { key: 'financeAmount', label: 'Finance Amount' },
-  { key: 'additionalExpense', label: 'Additional Expense' },
-  { key: 'totalBalanceDue', label: 'Total Balance Due' },
-  { key: 'toooP', label: 'T.O.O.P' },
-  { key: 'depAmtHeld', label: 'DEP Amt Held' },
-  { key: 'amountDue', label: 'Amount Due' },
-  { key: 'pmntMethod', label: 'Pmnt Method' },
-  { key: 'datePaid', label: 'Date Paid' },
-  { key: 'checkNum', label: 'Check #' },
-  { key: 'amountPaid', label: 'Amount Paid' },
-  { key: 'dripEdgeColor', label: 'Drip Edge Color' },
-  { key: 'ventilationColor', label: 'Ventilation Color' },
-  { key: 'manufacturer', label: 'Manufacturer' },
-  { key: 'shingleType', label: 'Shingle Type' },
-  { key: 'shingleColor', label: 'Shingle Color' },
-  { key: 'estimatedSquares', label: 'Estimated Squares' },
-  { key: 'notes', label: 'Notes' }
-];
-
-function showConfirmDialog(data) {
-  document.getElementById("confirm-dialog").classList.remove("hidden");
-  document.getElementById("menu").classList.add("hidden");
-  // Build form with all fields
-  let fieldsHtml = ALL_FIELDS.map(f => `
-    <div class="flex items-center gap-2">
-      <label class="text-gray-400 w-32">${f.label}:</label>
-      <input type="text" id="edit-${f.key}" value="${data[f.key] || ''}" class="flex-1 bg-gray-800 text-white px-2 py-1 rounded">
+      <!-- Other buttons -->
+      <button onclick="showRequestEstimate()" class="btn-secondary w-full py-3 rounded-xl font-bold">
+        📋 Request Estimate
+      </button>
     </div>
-  `).join('');
-  
-  let fieldsContainer = document.getElementById('confirm-fields');
-  if (!fieldsContainer) {
-    // Create the container if it doesn't exist
-    const dialog = document.getElementById('confirm-dialog');
-    if (dialog) {
-      fieldsContainer = document.createElement('div');
-      fieldsContainer.id = 'confirm-fields';
-      fieldsContainer.className = 'space-y-2 max-h-96 overflow-y-auto';
-      dialog.querySelector('h3').after(fieldsContainer);
-    }
-  }
-  if (fieldsContainer) {
-    fieldsContainer.innerHTML = fieldsHtml;
-  }
+    
+    <div id="progress" class="hidden mt-6 text-center">
+      <p class="text-white" id="progress-text">Processing...</p>
+    </div>
+  </div>
 
-    async function confirmSave() {
-      if (!pendingData) return;
-      
-      // Update pendingData with edited values from input fields
-      pendingData.owner = document.getElementById('edit-owner').value;
-      // Gather all fields for editing
-    // Collect all editable fields
-    ALL_FIELDS.forEach(f => {
-      const el = document.getElementById('edit-' + f.key);
-      if (el) pendingData[f.key] = el.value;
-    });
-    pendingData.certOfComp = document.getElementById('edit-certOfComp').value;
-    pendingData.contractDate = document.getElementById('edit-contractDate').value;
-    pendingData.estimateDate = document.getElementById('edit-estimateDate').value;
-    pendingData.installDate = document.getElementById('edit-installDate').value;
-      pendingData.phone = document.getElementById('edit-phone').value;
-      pendingData.email = document.getElementById('edit-email').value;
-      
-    pendingData.requiredDownPayment = document.getElementById('edit-requiredDownPayment').value;
-    pendingData.financeAmount = document.getElementById('edit-financeAmount').value;
-    pendingData.additionalExpense = document.getElementById('edit-additionalExpense').value;
-    pendingData.totalBalanceDue = document.getElementById('edit-totalBalanceDue').value;
-    pendingData.depAmtHeld = document.getElementById('edit-depAmtHeld').value;
-    pendingData.amountDue = document.getElementById('edit-amountDue').value;
-    pendingData.pmntMethod = document.getElementById('edit-pmntMethod').value;
-      
-    pendingData.datePaid = document.getElementById('edit-datePaid').value;
-    pendingData.checkNum = document.getElementById('edit-checkNum').value;
-    pendingData.amountPaid = document.getElementById('edit-amountPaid').value;
-    pendingData.dripEdgeColor = document.getElementById('edit-dripEdgeColor').value;
-      pendingData.needsEstimate = document.getElementById('edit-needsEstimate').checked;
-      pendingData.date = document.getElementById('edit-date').value;
-      pendingData.ventilationColor = document.getElementById('edit-ventilationColor').value;
-      pendingData.manufacturer = document.getElementById('edit-manufacturer').value;
-      pendingData.shingleType = document.getElementById('edit-shingleType').value;
-      pendingData.shingleColor = document.getElementById('edit-shingleColor').value;
-      pendingData.notes = document.getElementById('edit-notes').value;
-      
-      // Recalculate month based on edited date
-      const dateValue = pendingData.date.toLowerCase();
-      const months = ['january','february','march','april','may','june','july','august','september','october','november','december'];
-      let newMonth = 'April';
-      for (let i = 0; i < months.length; i++) {
-        if (dateValue.includes(months[i])) {
-          newMonth = months[i].charAt(0).toUpperCase() + months[i].slice(1);
-          break;
-        }
-      }
-      // Check for month numbers like "2-28-26"
-      const monthMatch = pendingData.date.match(/^(\d{1,2})/);
-      if (monthMatch) {
-        const m = parseInt(monthMatch[1]);
-        if (m >= 1 && m <= 12) {
-          newMonth = ['January','February','March','April','May','June','July','August','September','October','November','December'][m - 1];
-        }
-      }
-      pendingData.month = newMonth;
-      
-      showProgress(true, 'Saving...');
-      try {
-        const response = await fetch(API + '/api/save-confirmed', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(pendingData)
-        });
-        const result = await response.json();
-        if (result.success) {
-          showStatus('✓ Contract saved to ' + result.month);
-        } else {
-          showStatus(result.error || 'Error saving', true);
-        }
-      } catch (err) {
-        showStatus('Error: ' + err.message, true);
-      }
-      showProgress(false);
-      showMenu();
-    }
-
-    function cancelSave() {
-      showStatus('Cancelled');
-      showMenu();
-    }
-
-    async function handleFile(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      
-      document.getElementById('progress').className = 'mt-6';
-      document.getElementById('progress-text').textContent = 'Reading...';
-      
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      
-      reader.onload = async function() {
-        const imageData = reader.result.split(',')[1];
-        document.getElementById('progress-text').textContent = 'Processing...';
-        
-        const response = await fetch(API + '/api/upload-json', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ file: imageData, isPdf: false })
-        });
-        
-        const result = await response.json();
-        document.getElementById('progress').className = 'hidden';
-        
-        if (result.success && result.previewData) {
-          pendingData = result.previewData;
-          // Build preview
-          let html = '<div class="glass rounded-xl p-6 mb-4">';
-          html += '<h3 class="text-yellow-500 font-bold text-xl mb-4">Confirm Data</h3>';
-          ['owner','address','phone','email','totalCost','toooP','contractDate','manufacturer','shingleType','shingleColor'].forEach(f => {
-            if (result.previewData[f]) {
-              html += '<div class="mb-2"><label class="text-gray-400">' + f + ':</label><input id="confirm-' + f + '" value="' + result.previewData[f] + '" class="w-full bg-gray-800 text-white px-2 py-1 rounded"></div>';
-            }
-          });
-          html += '<button onclick="confirmAndSave()" class="btn-primary w-full py-3 mt-4 rounded-xl">Save to Spreadsheet</button>';
-          html += '<button onclick="location.reload()" class="btn-secondary w-full py-2 mt-2 rounded-xl">Cancel</button>';
-          html += '</div>';
-          
-          document.getElementById('menu').innerHTML = html;
-        } else {
-          alert('Error: ' + (result.error || 'Could not extract'));
-        }
-      };
-      
-      event.target.value = '';
-    }
-
-    async function confirmAndSave() {
-      if (!pendingData) return;
-      // Update with edited values
-      ['owner','address','phone','email','totalCost','toooP','contractDate','manufacturer','shingleType','shingleColor'].forEach(f => {
-        const el = document.getElementById('confirm-' + f);
-        if (el) pendingData[f] = el.value;
-      });
-      
-      pendingData.month = 'April';
-      pendingData.row = 999;
-      
-      const response = await fetch(API + '/api/save-confirmed', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(pendingData)
-      });
-      
-      const result = await response.json();
-      if (result.success) {
-location.reload();
-      } else {
-}
-    }
-    }
-
-    // New Upload Handler
+  <script>
+    const API = window.location.origin;
+    
+    // Upload handler - creates file input and processes
+    function handleUpload() {
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = 'image/*,.pdf';
-      input.onchange = async function(e) {
+      input.onchange = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-let imageData;
-        if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
-const images = await convertPdfToImages(file);
-          imageData = images.join('||PAGE||');
+        
+        showProgress('Reading file...');
+        
+        let imageData;
+        if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+          showProgress('Converting PDF...');
+          imageData = await convertPdf(file);
         } else {
-imageData = await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result.split(',')[1]);
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-          });
+          imageData = await readFile(file);
         }
-const response = await fetch(API + '/api/upload-json', {
+        
+        showProgress('Extracting data...');
+        
+        const response = await fetch(API + '/api/extract-data', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ file: imageData, isPdf: file.type === 'application/pdf' })
+          body: JSON.stringify({ file: imageData, isPdf: file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf') })
         });
+        
         const result = await response.json();
-        if (result.success) {
-          alert('✅ SUCCESS! Contract saved to ' + (result.month || 'sheet'));
-          location.reload();
+        
+        if (result.error) {
+          alert('Error: ' + result.error);
+          hideProgress();
+        } else if (result.success && result.data) {
+          showConfirmation(result.data);
         } else {
-          alert('Error: ' + (result.error || 'Failed'));
+          alert('No data extracted');
+          hideProgress();
         }
       };
       input.click();
     }
-    </script>
+    
+    // Show confirmation screen with editable fields
+    function showConfirmation(data) {
+      const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      const currentMonth = new Date().toLocaleString('default', { month: 'long' });
+      
+      let html = '<div class="glass rounded-xl p-4">';
+      html += '<h3 class="text-yellow-500 font-bold text-lg mb-3">Confirm Data</h3>';
+      html += '<div class="mb-3"><label class="text-gray-400 text-sm">Month:</label>';
+      html += '<select id="month" class="w-full bg-gray-800 text-white px-2 py-1 rounded">';
+      months.forEach(m => html += '<option value="' + m + '"' + (m === currentMonth ? ' selected' : '') + '>' + m + '</option>');
+      html += '</select></div>';
+      
+      const fields = ['owner','address','phone','email','totalCost','toooP','contractDate','manufacturer','shingleType','shingleColor'];
+      fields.forEach(f => {
+        html += '<div class="mb-2"><label class="text-gray-400 text-sm">' + f + ':</label>';
+        html += '<input id="' + f + '" value="' + (data[f] || '') + '" class="w-full bg-gray-800 text-white px-2 py-1 rounded"></div>';
+      });
+      
+      html += '<button onclick="saveData()" class="btn-success w-full py-2 mt-4 rounded">💾 Save</button>';
+      html += '<button onclick="location.reload()" class="btn-secondary w-full py-2 mt-2 rounded">Cancel</button>';
+      html += '</div>';
+      
+      document.getElementById('menu').innerHTML = html;
+    }
+    
+    // Save to sheet
+    async function saveData() {
+      const month = document.getElementById('month').value;
+      const data = {
+        month,
+        owner: document.getElementById('owner').value,
+        address: document.getElementById('address').value,
+        phone: document.getElementById('phone').value,
+        email: document.getElementById('email').value,
+        totalCost: document.getElementById('totalCost').value,
+        toooP: document.getElementById('toooP').value,
+        contractDate: document.getElementById('contractDate').value,
+        manufacturer: document.getElementById('manufacturer').value,
+        shingleType: document.getElementById('shingleType').value,
+        shingleColor: document.getElementById('shingleColor').value,
+        ventilationColor: '',
+        dripEdgeColor: '',
+        notes: ''
+      };
+      
+      showProgress('Saving...');
+      
+      const response = await fetch(API + '/api/save-extracted', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        alert('✅ Saved to ' + month);
+        location.reload();
+      } else {
+        alert('Error: ' + (result.error || 'Failed'));
+        hideProgress();
+      }
+    }
+    
+    // Show request estimate
+    function showRequestEstimate() {
+      alert('Select a job first - this feature needs the job list');
+    }
+    
+    // Helpers
+    function showProgress(text) {
+      document.getElementById('progress').classList.remove('hidden');
+      document.getElementById('progress-text').textContent = text;
+    }
+    
+    function hideProgress() {
+      document.getElementById('progress').classList.add('hidden');
+    }
+    
+    function readFile(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+    
+    async function convertPdf(file) {
+      // Simple placeholder - would need pdf.js for real PDF conversion
+      return readFile(file);
+    }
+  </script>
 </body>
 </html>
