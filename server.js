@@ -21,7 +21,15 @@ const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
 
 app.use(express.static('public'));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+
+// Column mapping: A=0, B=1, ..., AE=30
+// A=Address, B=CertOfComp, C=ContractDate, D=EstimateDate, E=InstallDate
+// F=Owner, G=TotalCost, H=RequiredDownPayment, I=FinanceAmount, J=AdditionalExpense
+// K=TotalBalanceDue, L=T.O.O.P, M=DEPtAmtHeld, N=AmountDue, O=PmntMethod
+// P=(empty), Q=DatePaid, R=CheckNum, S=AmountPaid, T=DripEdgeColor
+// U=VentilationColor, V=Manufacturer, W=ShingleType, X=ShingleColor, Y=EstimatedSquares, Z=Notes
+// AA-AE=(empty for future use)
 
 // Helper: check if row is a header or empty
 function isValidJob(job) {
@@ -72,9 +80,8 @@ app.get('/api/get-job', async (req, res) => {
 // Upload contract
 app.post('/api/upload-json', async (req, res) => {
   try {
-    const apiKey = process.env.OPENROUTER_API_KEY;
+    const apiKey = process.env.OPENROUTER_API_KEY || process.env.openrouter_api_key;
     
-    // Check API key first
     if (!apiKey) {
       return res.status(500).json({ error: 'OPENROUTER_API_KEY not configured. Add it in Render environment variables.' });
     }
@@ -95,7 +102,6 @@ app.post('/api/upload-json', async (req, res) => {
       })
     });
     
-    // Check for HTTP errors
     if (!response.ok) {
       const errorText = await response.text();
       console.error('OpenRouter error:', response.status, errorText);
@@ -104,7 +110,6 @@ app.post('/api/upload-json', async (req, res) => {
     
     const data = await response.json();
     
-    // Check for API-level errors
     if (data.error) {
       return res.status(500).json({ error: data.error.message || 'AI extraction failed' });
     }
@@ -142,7 +147,11 @@ app.post('/api/upload-json', async (req, res) => {
     let month = 'April';
     for (let i = 0; i < months.length; i++) if (job.contractDate.toLowerCase().includes(months[i].toLowerCase())) month = months[i];
     
-    const rowData = [job.address, '', job.contractDate, '', '', job.owner, job.totalCost, '0', '0', '0', job.totalCost, job.toooP, '0', '0', '', '', job.phone, job.email, '', job.dripEdgeColor, job.ventilationColor, job.manufacturer, job.shingleType, job.shingleColor, '', '', '', '', '', '', '', '', '', ''];
+    const rowData = [
+      job.address, '', job.contractDate, '', '', job.owner, job.totalCost, '0', '0', '0', job.totalCost, job.toooP, '0', '0', '', 
+      '', job.phone, job.email, '', job.dripEdgeColor, job.ventilationColor, job.manufacturer, job.shingleType, job.shingleColor, '', job.notes,
+      '', '', '', '', ''
+    ];
     
     const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A:AE` });
     const nextRow = (r.data.values?.length || 0) + 4;
@@ -162,14 +171,39 @@ app.post('/api/save-confirmed', async (req, res) => {
     const { month, row, ...data } = req.body;
     if (!month || !row) return res.status(400).json({ error: 'Missing month or row' });
     
-    // Build row data from all fields (A through AE = columns 0-30)
+    // Build row data with exactly 31 columns (A through AE = indices 0-30)
     const rowData = [
-      data.address || '', data.certOfComp || '', data.contractDate || '', data.estimateDate || '', data.installDate || '',
-      data.owner || '', data.totalCost || '', data.requiredDownPayment || '', data.financeAmount || '', data.additionalExpense || '',
-      data.totalBalanceDue || '', data.toooP || '', data.depAmtHeld || '', data.amountDue || '', data.pmntMethod || '',
-      '', data.datePaid || '', data.checkNum || '', data.amountPaid || '', data.dripEdgeColor || '', data.ventilationColor || '',
-      data.manufacturer || '', data.shingleType || '', data.shingleColor || '', data.estimatedSquares || '', data.notes || '',
-      '', '', '', '', '', ''
+      data.address || '',          // A=0
+      data.certOfComp || '',       // B=1
+      data.contractDate || '',    // C=2
+      data.estimateDate || '',    // D=3
+      data.installDate || '',      // E=4
+      data.owner || '',            // F=5
+      data.totalCost || '',        // G=6
+      data.requiredDownPayment || '', // H=7
+      data.financeAmount || '',    // I=8
+      data.additionalExpense || '', // J=9
+      data.totalBalanceDue || '', // K=10
+      data.toooP || '',            // L=11
+      data.depAmtHeld || '',       // M=12
+      data.amountDue || '',       // N=13
+      data.pmntMethod || '',       // O=14
+      '',                          // P=15 (empty)
+      data.datePaid || '',        // Q=16
+      data.checkNum || '',        // R=17
+      data.amountPaid || '',      // S=18
+      data.dripEdgeColor || '',   // T=19
+      data.ventilationColor || '', // U=20
+      data.manufacturer || '',     // V=21
+      data.shingleType || '',      // W=22
+      data.shingleColor || '',     // X=23
+      data.estimatedSquares || '', // Y=24
+      data.notes || '',            // Z=25
+      '',                          // AA=26
+      '',                          // AB=27
+      '',                          // AC=28
+      '',                          // AD=29
+      ''                           // AE=30
     ];
     
     await sheets.spreadsheets.values.update({ 
@@ -191,12 +225,18 @@ app.post('/api/save-estimate', async (req, res) => {
     const { month, row, estimateDate, permitCost, primaryContractor, paid } = req.body;
     if (!month || !row) return res.status(400).json({ error: 'Missing month or row' });
     
-    // Single batched update for all fields
+    // Update D, Y, AC, AE in one call
+    const rowData = new Array(31).fill('');
+    rowData[3] = estimateDate || '';      // D
+    rowData[24] = permitCost || '';       // Y
+    rowData[28] = primaryContractor || ''; // AC
+    rowData[30] = paid || '';             // AE
+    
     await sheets.spreadsheets.values.update({ 
       spreadsheetId: SPREADSHEET_ID, 
-      range: `${month}!D${row}:AE${row}`, 
+      range: `${month}!A${row}:AE${row}`, 
       valueInputOption: 'USER_ENTERED', 
-      requestBody: { values: [[estimateDate || '', permitCost || '', primaryContractor || '', paid || '']] }
+      requestBody: { values: [rowData] }
     });
     res.json({ success: true });
   } catch (err) {
