@@ -350,9 +350,13 @@
 
     // ========== REQUEST ESTIMATE ==========
     async function showRequestEstimate() {
-      alert('showRequestEstimate started');
-      await loadJobsIfNeeded();
-      alert('Jobs loaded: ' + JSON.stringify(window.jobs));
+      alert('1. showRequestEstimate started');
+      try {
+        alert('2. About to call loadJobsIfNeeded');
+        await loadJobsIfNeeded();
+        alert('3. Back from loadJobsIfNeeded');
+      alert('4. Jobs: ' + JSON.stringify(Object.keys(window.jobs || {})));
+      const months = Object.keys(window.jobs || {});
       const months = Object.keys(window.jobs || {});
       if (months.length === 0) { alert('No jobs found'); return; }
       
