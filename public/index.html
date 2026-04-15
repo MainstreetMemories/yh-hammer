@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Yellow Hammer Properties</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- PDF.js for converting scanned PDFs to images -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
   <style>
@@ -20,17 +19,10 @@
 <body class="p-6">
   <div class="max-w-2xl mx-auto">
     <h1 class="text-3xl font-bold text-center text-yellow-500 mb-8">Yellow Hammer Properties</h1>
-    
     <div id="menu" class="space-y-4">
-      <button onclick="handleUpload()" class="btn-primary w-full py-4 rounded-xl font-bold text-xl">
-        📷 Upload Contract
-      </button>
-      
-      <button onclick="alert('Select a job first')" class="btn-secondary w-full py-3 rounded-xl font-bold">
-        📋 Request Estimate
-      </button>
+      <button onclick="handleUpload()" class="btn-primary w-full py-4 rounded-xl font-bold text-xl">📷 Upload Contract</button>
+      <button onclick="alert('Select a job first')" class="btn-secondary w-full py-3 rounded-xl font-bold">📋 Request Estimate</button>
     </div>
-    
     <div id="progress" class="hidden mt-6 text-center">
       <p class="text-white" id="progress-text">Processing...</p>
     </div>
@@ -53,7 +45,7 @@
         const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
         
         if (isPdf) {
-          showProgress('Converting PDF to image...');
+          showProgress('Converting PDF to images...');
           imageData = await convertPdfToImages(file);
         } else {
           imageData = await readFile(file);
@@ -87,7 +79,26 @@
       input.click();
     }
     
-    // Convert PDF to images using PDF.js
+    async function convertPdfToImages(file) {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+      const images = [];
+      
+      for (let i = 1; i <= Math.min(pdf.numPages, 2); i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 2 });
+        
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const context = canvas.getContext('2d');
+        
+        await page.render({ canvasContext: context, viewport: viewport }).promise;
+        images.push(canvas.toDataURL('image/jpeg').split(',')[1]);
+      }
+      
+      return images.join('||PAGE||');
+    }
     
     function readFile(file) {
       return new Promise((resolve, reject) => {
@@ -106,11 +117,11 @@
       html += '<h3 class="text-yellow-500 font-bold text-lg mb-3">Confirm Data</h3>';
       html += '<div class="mb-3"><label class="text-gray-400 text-sm">Month:</label>';
       html += '<select id="month" class="w-full bg-gray-800 text-white px-2 py-1 rounded">';
-      months.forEach(m => html += '<option value="' + m + '"' + (m === currentMonth ? ' selected' : '') + '>' + m + '</option>');
+      months.forEach(function(m) { html += '<option value="' + m + '"' + (m === currentMonth ? ' selected' : '') + '>' + m + '</option>'; });
       html += '</select></div>';
       
-      const fields = ['owner','address','phone','email','totalCost','toooP','contractDate','manufacturer','shingleType','shingleColor'];
-      fields.forEach(f => {
+      const fields = ['owner','address','phone','email','totalCost','toooP','contractDate'];
+      fields.forEach(function(f) {
         html += '<div class="mb-2"><label class="text-gray-400 text-sm">' + f + ':</label>';
         html += '<input id="' + f + '" value="' + (data[f] || '') + '" class="w-full bg-gray-800 text-white px-2 py-1 rounded"></div>';
       });
@@ -131,13 +142,7 @@
         email: document.getElementById('email').value,
         totalCost: document.getElementById('totalCost').value,
         toooP: document.getElementById('toooP').value,
-        contractDate: document.getElementById('contractDate').value,
-        manufacturer: document.getElementById('manufacturer').value,
-        shingleType: document.getElementById('shingleType').value,
-        shingleColor: document.getElementById('shingleColor').value,
-        ventilationColor: '',
-        dripEdgeColor: '',
-        notes: ''
+        contractDate: document.getElementById('contractDate').value
       };
       
       showProgress('Saving...');
@@ -151,7 +156,7 @@
       const result = await response.json();
       
       if (result.success) {
-        alert('✅ Saved to ' + data.month + ' for ' + data.owner);
+        alert('✅ Saved to ' + data.month);
         location.reload();
       } else {
         alert('Error: ' + (result.error || 'Failed'));
