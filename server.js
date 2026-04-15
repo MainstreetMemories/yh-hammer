@@ -242,7 +242,7 @@ app.post('/api/extract-data', async (req, res) => {
       body: JSON.stringify({
         model: 'anthropic/claude-3-haiku',
         messages: [{ role: 'user', content: [
-          { type: 'text', text: 'Extract from this contract: Owner Name, Street Address, City, State, Zip Code, Phone Number, Email, Contract Date (look for date near "Date:" or "Contract Date"), Total Contract Amount, T.O.O.P (total out of pocket), Drip Edge Color, Ventilation Color. Format: Owner: | Street: | City: | State: | Zip: | Phone: | Email: | Date: | Total: | TOOP: | DripEdge: | VentColor:' },
+          { type: 'text', text: 'Extract from this contract: Look for the DATE (at the bottom, format like 3-19-26 or 03/19/2026), Owner Name, Street Address, City, State, Zip Code, Phone Number, Email, Total Amount, T.O.O.P amount, Drip Edge Color, Ventilation Color. Return: Date: | Owner: | Street: | City: | State: | Zip: | Phone: | Email: | Total: | TOOP: | DripEdge: | VentColor:' },
           { type: 'image_url', image_url: { url: imageData } }
         ]}],
         max_tokens: 2500
