@@ -242,7 +242,7 @@ app.post('/api/extract-data', async (req, res) => {
       body: JSON.stringify({
         model: 'anthropic/claude-3-haiku',
         messages: [{ role: 'user', content: [
-          { type: 'text', text: 'Read this contract and tell me: WHO is the owner (name), WHAT is the property address, WHAT is the phone number, WHAT is the email. Answer in simple format: Owner=NAME | Address=STREET CITY STATE ZIP | Phone=NUMBER | Email=EMAIL' },
+          { type: 'text', text: 'Read this contract and tell me: WHO is the owner (name), WHAT is the property address, WHAT is the phone number, WHAT is the email, WHAT is the date at the bottom (like 3-19-26). Answer in simple format: Owner=NAME | Address=STREET CITY STATE ZIP | Phone=NUMBER | Email=EMAIL | Date=DATE' },
           { type: 'image_url', image_url: { url: imageData } }
         ]}],
         max_tokens: 1500
@@ -276,8 +276,10 @@ app.post('/api/extract-data', async (req, res) => {
     var emailMatch = text.match(/Email=([^|]+)/i);
     var email = emailMatch ? emailMatch[1].trim() : '';
     
+    var dateMatch = text.match(/Date=([^|]+)/i);
+    var contractDate = dateMatch ? dateMatch[1].trim() : '';
+    
     // Default the rest
-    var contractDate = '';
     var totalCost = '0';
     var toooP = '0';
     var dripEdgeColor = '';
