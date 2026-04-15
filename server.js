@@ -242,10 +242,10 @@ app.post('/api/extract-data', async (req, res) => {
       body: JSON.stringify({
         model: 'anthropic/claude-3-haiku',
         messages: [{ role: 'user', content: [
-          { type: 'text', text: 'Extract from this contract: Owner Name, Property Address (street, city, state, zip), Phone Number, Email, Contract Date, Total Contract Amount, T.O.O.P (total out of pocket), Drip Edge Color, Ventilation Color. Format each as: Owner: Value, Address: Value, Phone: Value, Email: Value, Contract Date: Value, Total Cost: Value, T.O.O.P: Value, Drip Edge Color: Value, Ventilation Color: Value' },
+          { type: 'text', text: 'Extract from this contract: Owner Name, Street Address, City, State, Zip Code, Phone Number, Email, Contract Date (look for date near "Date:" or "Contract Date"), Total Contract Amount, T.O.O.P (total out of pocket), Drip Edge Color, Ventilation Color. Format: Owner: | Street: | City: | State: | Zip: | Phone: | Email: | Date: | Total: | TOOP: | DripEdge: | VentColor:' },
           { type: 'image_url', image_url: { url: imageData } }
         ]}],
-        max_tokens: 2000
+        max_tokens: 2500
       })
     });
     
@@ -263,16 +263,32 @@ app.post('/api/extract-data', async (req, res) => {
     
     console.log('AI response:', text);
     
+    // Parse separate address fields
+    var street = field('Street') || '';
+    var city = field('City') || '';
+    var state = field('State') || '';
+    var zip = field('Zip') || '';
+    var fullAddress = [street, city, state, zip].filter(function(x) { return x; }).join(', ');
+    
+    var owner = field('Owner') || field('Name') || '';
+    var phone = field('Phone') || '';
+    var email = field('Email') || '';
+    var contractDate = field('Date') || field('Contract Date') || '';
+    var totalCost = field('Total') ? field('Total').replace(/[$,]/g, '') : (amounts[0] ? amounts[0].replace(/[$,]/g, '') : '0');
+    var toooP = field('TOOP') ? field('TOOP').replace(/[$,]/g, '') : (amounts[1] ? amounts[1].replace(/[$,]/g, '') : '0');
+    var dripEdgeColor = field('DripEdge') || '';
+    var ventilationColor = field('VentColor') || '';
+    
     res.json({ success: true, data: {
-      owner: field('Owner') || field('Name') || '',
-      address: [field('Address'), field('City'), field('State'), field('Zip')].filter(function(x) { return x; }).join(', ') || field('Address') || '',
-      phone: field('Phone') || '',
-      email: field('Email') || '',
-      totalCost: field('Total Cost') ? field('Total Cost').replace(/[$,]/g, '') : (amounts[0] ? amounts[0].replace(/[$,]/g, '') : '0'),
-      toooP: field('T.O.O.P') ? field('T.O.O.P').replace(/[$,]/g, '') : (amounts[1] ? amounts[1].replace(/[$,]/g, '') : '0'),
-      contractDate: field('Contract Date') || '',
-      dripEdgeColor: field('Drip Edge Color') || '',
-      ventilationColor: field('Ventilation Color') || '',
+      owner: owner,
+      address: fullAddress || field('Address') || '',
+      phone: phone,
+      email: email,
+      totalCost: totalCost,
+      toooP: toooP,
+      contractDate: contractDate,
+      dripEdgeColor: dripEdgeColor,
+      ventilationColor: ventilationColor,
       manufacturer: '',
       shingleType: '',
       shingleColor: '',
