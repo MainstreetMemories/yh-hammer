@@ -5,9 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Yellow Hammer Properties</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- PDF.js for converting scanned PDFs to images -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
   <style>
     body { background: #1a1a2e; color: #fff; font-family: system-ui, sans-serif; }
     .glass { background: #16213e; }
@@ -22,11 +19,13 @@
     <h1 class="text-3xl font-bold text-center text-yellow-500 mb-8">Yellow Hammer Properties</h1>
     
     <div id="menu" class="space-y-4">
+      <!-- Upload Button -->
       <button onclick="handleUpload()" class="btn-primary w-full py-4 rounded-xl font-bold text-xl">
         📷 Upload Contract
       </button>
       
-      <button onclick="alert('Select a job first')" class="btn-secondary w-full py-3 rounded-xl font-bold">
+      <!-- Other buttons -->
+      <button onclick="showRequestEstimate()" class="btn-secondary w-full py-3 rounded-xl font-bold">
         📋 Request Estimate
       </button>
     </div>
@@ -39,6 +38,7 @@
   <script>
     const API = window.location.origin;
     
+    // Upload handler - creates file input and processes
     function handleUpload() {
       const input = document.createElement('input');
       input.type = 'file';
@@ -50,71 +50,37 @@
         showProgress('Reading file...');
         
         let imageData;
-        const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-        
-        if (isPdf) {
-          showProgress('Converting PDF to image...');
-          imageData = await convertPdfToImages(file);
+        if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+          showProgress('Converting PDF...');
+          imageData = await convertPdf(file);
         } else {
           imageData = await readFile(file);
         }
         
-        showProgress('Extracting data with AI...');
+        showProgress('Extracting data...');
         
-        try {
-          const response = await fetch(API + '/api/extract-data', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ file: imageData, isPdf: isPdf })
-          });
-          
-          const result = await response.json();
-          
-          if (result.error) {
-            alert('Error: ' + result.error);
-            hideProgress();
-          } else if (result.success && result.data) {
-            showConfirmation(result.data);
-          } else {
-            alert('No data extracted - try a clearer image');
-            hideProgress();
-          }
-        } catch (err) {
-          alert('AI DATA FAILED: ' + err.message);
+        const response = await fetch(API + '/api/extract-data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ file: imageData, isPdf: file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf') })
+        });
+        
+        const result = await response.json();
+        
+        if (result.error) {
+          alert('Error: ' + result.error);
+          hideProgress();
+        } else if (result.success && result.data) {
+          showConfirmation(result.data);
+        } else {
+          alert('No data extracted');
           hideProgress();
         }
       };
       input.click();
     }
     
-    // Convert PDF to images using PDF.js
-    async function convertPdfToImages(file) {
-      const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
-      
-      // Convert first page to image
-      const page = await pdf.getPage(1);
-      const viewport = page.getViewport({ scale: 2 });
-      
-      const canvas = document.createElement('canvas');
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-      const context = canvas.getContext('2d');
-      
-      await page.render({ canvasContext: context, viewport: viewport }).promise;
-      
-      return canvas.toDataURL('image/jpeg').split(',')[1];
-    }
-    
-    function readFile(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result.split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-    }
-    
+    // Show confirmation screen with editable fields
     function showConfirmation(data) {
       const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
       const currentMonth = new Date().toLocaleString('default', { month: 'long' });
@@ -139,9 +105,11 @@
       document.getElementById('menu').innerHTML = html;
     }
     
+    // Save to sheet
     async function saveData() {
+      const month = document.getElementById('month').value;
       const data = {
-        month: document.getElementById('month').value,
+        month,
         owner: document.getElementById('owner').value,
         address: document.getElementById('address').value,
         phone: document.getElementById('phone').value,
@@ -168,7 +136,7 @@
       const result = await response.json();
       
       if (result.success) {
-        alert('✅ Saved to ' + data.month + ' for ' + data.owner);
+        alert('✅ Saved to ' + month);
         location.reload();
       } else {
         alert('Error: ' + (result.error || 'Failed'));
@@ -176,6 +144,12 @@
       }
     }
     
+    // Show request estimate
+    function showRequestEstimate() {
+      alert('Select a job first - this feature needs the job list');
+    }
+    
+    // Helpers
     function showProgress(text) {
       document.getElementById('progress').classList.remove('hidden');
       document.getElementById('progress-text').textContent = text;
@@ -183,6 +157,20 @@
     
     function hideProgress() {
       document.getElementById('progress').classList.add('hidden');
+    }
+    
+    function readFile(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+    
+    async function convertPdf(file) {
+      // Simple placeholder - would need pdf.js for real PDF conversion
+      return readFile(file);
     }
   </script>
 </body>
