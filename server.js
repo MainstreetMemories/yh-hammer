@@ -273,13 +273,8 @@ app.post('/api/extract-data', async (req, res) => {
     var dripEdgeColor = field('DripEdge') || '';
     var ventilationColor = field('VentColor') || '';
     
-    // Parse address - could be single field or parts
-    var street = field('Street') || '';
-    var city = field('City') || '';
-    var state = field('State') || '';
-    var zip = field('Zip') || '';
-    var fullAddress = [street, city, state, zip].filter(function(x) { return x; }).join(', ');
-    if (!fullAddress) fullAddress = field('Address') || '';
+    // Use address as-is, don't try to combine parts (causes duplication)
+    var fullAddress = field('Address') || '';
     
     res.json({ success: true, data: {
       owner: owner,
