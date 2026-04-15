@@ -246,7 +246,7 @@ app.post('/api/extract-data', async (req, res) => {
       body: JSON.stringify({
         model: 'anthropic/claude-3-haiku',
         messages: [{ role: 'user', content: [
-          { type: 'text', text: 'Read this contract and tell me: WHO is the owner (name), WHAT is the property address, WHAT is the phone number, WHAT is the email, At the BOTTOM look for the DATE next to "YHP Representative Signature". Answer in simple format: Owner=NAME | Address=STREET CITY STATE ZIP | Phone=NUMBER | Email=EMAIL | Date=DATE' },
+          { type: 'text', text: 'Extract from any page: Contract Date (after "YHP Representative Signature"). Format each as: Field: Value' },
           { type: 'image_url', image_url: { url: imageData } }
         ]}],
         max_tokens: 1500
@@ -269,21 +269,17 @@ app.post('/api/extract-data', async (req, res) => {
     
     console.log('AI response:', text);
     
-    // Simple parsing - look for patterns
-    var ownerMatch = text.match(/Owner=([^|]+)/i);
-    var owner = ownerMatch ? ownerMatch[1].trim() : '';
+    // Parse using Field: Value format (old style)
+    var field = function(n) { 
+      var m = text.match(new RegExp('(?:Field:\\s*)?' + n + ':\\s*(.+)', 'i')); 
+      return m ? m[1].trim() : ''; 
+    };
     
-    var addressMatch = text.match(/Address=([^|]+)/i);
-    var fullAddress = addressMatch ? addressMatch[1].trim() : '';
-    
-    var phoneMatch = text.match(/Phone=([^|]+)/i);
-    var phone = phoneMatch ? phoneMatch[1].trim() : '';
-    
-    var emailMatch = text.match(/Email=([^|]+)/i);
-    var email = emailMatch ? emailMatch[1].trim() : '';
-    
-    var dateMatch = text.match(/Date=([^|]+)/i);
-    var contractDate = dateMatch ? dateMatch[1].trim() : '';
+    var owner = field('Owner') || field('Name') || '';
+    var fullAddress = field('Address') || '';
+    var phone = field('Phone') || '';
+    var email = field('Email') || '';
+    var contractDate = field('Contract Date') || field('Date') || '';
     
     // Default the rest
     var totalCost = '0';
