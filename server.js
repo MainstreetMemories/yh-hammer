@@ -236,6 +236,10 @@ app.post('/api/extract-data', async (req, res) => {
     const pages = file.split('||PAGE||');
     const imageData = isPdf ? 'data:image/png;base64,' + pages[0] : 'data:image/jpeg;base64,' + file;
     
+    // Add timeout
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+    
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey, 'HTTP-Referer': 'https://yh-hammer.onrender.com', 'X-Title': 'Yellow Hammer' },
@@ -246,8 +250,10 @@ app.post('/api/extract-data', async (req, res) => {
           { type: 'image_url', image_url: { url: imageData } }
         ]}],
         max_tokens: 1500
-      })
+      }),
+      signal: controller.signal
     });
+    clearTimeout(timeout);
     
     if (!response.ok) {
       const errText = await response.text();
