@@ -92,7 +92,7 @@
       const arrayBuffer = await file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
       
-      // Convert first page to image
+      // Convert first 2 pages to image
       const page = await pdf.getPage(1);
       const viewport = page.getViewport({ scale: 2 });
       
