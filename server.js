@@ -57,7 +57,7 @@ app.post('/api/extract-data', async (req, res) => {
         model: 'anthropic/claude-3-haiku',
         messages: [{ role: 'user', content: [
           { type: 'text', text: 'Extract: Owner, Address (street city state zip), Phone, Email, Total Cost, T.O.O.P, Contract Date, Manufacturer, Shingle Type, Shingle Color, Ventilation Color, Drip Edge Color, Notes. Format: Field: Value' },
-          { type: 'image_url', image_url: { url: isPdf ? `data:image/png;base64,${file.split('||PAGE||')[0]}` : `data:image/jpeg;base64,${file}` } }
+          { type: 'image_url', image_url: { url: isPdf ? `data:image/jpeg;base64,${file.split('||PAGE||')[0]}` : `data:image/jpeg;base64,${file}` } }
         ]}],
         max_tokens: 1500
       })
@@ -124,15 +124,162 @@ app.post('/api/save-extracted', async (req, res) => {
 
 // Request estimate - GroupMe
 app.post('/api/request-estimate', async (req, res) => {
-  const { address, owner } = req.body;
-  const botId = process.env.GROUPME_BOT_ID || 'a36a8a2e2fc7ad27ece3f21843';
-  
   try {
+    const { month, row } = req.body;
+    if (!month || !row) return res.status(400).json({ error: 'Missing month or row' });
+    
+    const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: month + '!A' + row + ':F' + row });
+    const job = r.data.values?.[0] || [];
+    const owner = job[5] || 'Unknown';
+    const address = job[0] || '';
+    
+    const botId = process.env.GROUPME_BOT_ID || 'a36a8a2e2fc7ad27ece3f21843';
     await fetch('https://api.groupme.com/v3/bots/post', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bot_id: botId, text: `ESTIMATE NEEDED\n${owner || 'Unknown'}\n${address || 'Unknown'}` })
+      body: JSON.stringify({ bot_id: botId, text: 'ESTIMATE NEEDED\n' + owner + '\n' + address })
     });
+    
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get single job
+app.get('/api/get-job', async (req, res) => {
+  try {
+    const { month, row } = req.query;
+    if (!month || !row) return res.status(400).json({ error: 'Missing month or row' });
+    
+    const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: month + '!A' + row + ':AE' + row });
+    const job = r.data.values?.[0] || [];
+    
+    res.json({
+      address: job[0] || '', certOfComp: job[1] || '', contractDate: job[2] || '',
+      estimateDate: job[3] || '', installDate: job[4] || '', owner: job[5] || '',
+      totalCost: job[6] || '', requiredDownPayment: job[7] || '', financeAmount: job[8] || '',
+      additionalExpense: job[9] || '', totalBalanceDue: job[10] || '', toooP: job[11] || '',
+      depAmtHeld: job[12] || '', amountDue: job[13] || '', pmntMethod: job[14] || '',
+      phone: job[15] || '', email: job[16] || '', datePaid: job[17] || '', checkNum: job[18] || '',
+      amountPaid: job[19] || '', dripEdgeColor: job[20] || '', ventilationColor: job[21] || '',
+      manufacturer: job[22] || '', shingleType: job[23] || '', shingleColor: job[24] || '',
+      estimatedSquares: job[25] || '', notes: job[26] || ''
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Save confirmed/edited job
+app.post('/api/save-confirmed', async (req, res) => {
+  try {
+    const data = req.body;
+    const { month, row } = data;
+    if (!month) return res.status(400).json({ error: 'Missing month' });
+    
+    const rowData = [
+      data.address || '', data.certOfComp || '', data.contractDate || '', data.estimateDate || '',
+      data.installDate || '', data.owner || '', data.totalCost || '', data.requiredDownPayment || '',
+      data.financeAmount || '', data.additionalExpense || '', data.totalBalanceDue || '', data.toooP || '',
+      data.depAmtHeld || '', data.amountDue || '', data.pmntMethod || '', data.phone || '', data.email || '',
+      data.datePaid || '', data.checkNum || '', data.amountPaid || '', data.dripEdgeColor || '',
+      data.ventilationColor || '', data.manufacturer || '', data.shingleType || '', data.shingleColor || '',
+      data.estimatedSquares || '', data.notes || ''
+    ];
+    
+    let targetRow = row || ((await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: month + '!A:AE' })).data.values?.length || 0) + 1;
+    
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: month + '!A' + targetRow + ':AE' + targetRow,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: [rowData] }
+    });
+    
+    res.json({ success: true, month: month, row: targetRow });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Save estimate
+app.post('/api/save-estimate', async (req, res) => {
+  try {
+    const { month, row, estimateDate, squares, primaryContractor, paid } = req.body;
+    if (!month || !row) return res.status(400).json({ error: 'Missing month or row' });
+    
+    const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: month + '!A' + row + ':AE' + row });
+    const job = r.data.values?.[0] || [];
+    
+    job[3] = estimateDate || '';  // D = Estimate Date
+    job[25] = squares || '';      // Z = Estimated Squares
+    // AC = Contractor (col 28), AE = Paid (col 30)
+    // For simplicity, add to notes
+    if (primaryContractor || paid) {
+      job[26] = (job[26] || '') + ' | Contractor: ' + (primaryContractor || '') + ' | Paid: ' + (paid || '');
+    }
+    
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: month + '!A' + row + ':AE' + row,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: [job] }
+    });
+    
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Save install date
+app.post('/api/save-install-date', async (req, res) => {
+  try {
+    const { month, row, installDate } = req.body;
+    if (!month || !row) return res.status(400).json({ error: 'Missing month or row' });
+    
+    const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: month + '!A' + row + ':AE' + row });
+    const job = r.data.values?.[0] || [];
+    
+    job[4] = installDate || '';  // E = Install Date
+    
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: month + '!A' + row + ':AE' + row,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: [job] }
+    });
+    
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get contractors list
+app.get('/api/contractors', (req, res) => {
+  res.json(['Joshua Hall', 'Dylan Hall', 'Jesse Hall', 'Austin Hall', 'Jason Hall', 'Caleb Hall', 'Nathan Hall']);
+});
+
+// Request install - GroupMe
+app.post('/api/request-install', async (req, res) => {
+  try {
+    const { month, row } = req.body;
+    if (!month || !row) return res.status(400).json({ error: 'Missing month or row' });
+    
+    const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: month + '!A' + row + ':F' + row });
+    const job = r.data.values?.[0] || [];
+    const owner = job[5] || 'Unknown';
+    const address = job[0] || '';
+    
+    const botId = process.env.GROUPME_BOT_ID || 'a36a8a2e2fc7ad27ece3f21843';
+    await fetch('https://api.groupme.com/v3/bots/post', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bot_id: botId, text: 'INSTALL DATE NEEDED\n' + owner + '\n' + address })
+    });
+    
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
