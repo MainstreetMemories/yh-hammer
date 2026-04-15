@@ -53,7 +53,7 @@ app.post('/api/extract-data', async (req, res) => {
       body: JSON.stringify({
         model: 'anthropic/claude-3-haiku',
         messages: [{ role: 'user', content: [
-          { type: 'text', text: 'Extract: Owner, Address (street city state zip), Phone, Email, Total Cost, T.O.O.P, Contract Date, Manufacturer, Shingle Type, Shingle Color, Notes. Format: Field: Value' },
+          { type: 'text', text: 'Extract: Owner, Address, City, State, Zip, Phone, Email, Total Cost, T.O.O.P, Contract Date, Manufacturer, Shingle Type, Shingle Color, Notes. Format: Field: Value' },
           { type: 'image_url', image_url: { url: isPdf ? 'data:image/png;base64,' + file.split('||PAGE||')[0] : 'data:image/jpeg;base64,' + file } }
         ]}],
         max_tokens: 1500
@@ -70,7 +70,7 @@ app.post('/api/extract-data', async (req, res) => {
     
     res.json({ success: true, data: {
       owner: field('Owner') || field('Name') || '',
-      address: field('Address') || field('Street') || '',
+      address: [field('Address') || '', field('City') || '', field('State') || '', field('Zip') || ''].filter(Boolean).join(', '),
       phone: field('Phone') || '',
       email: field('Email') || '',
       totalCost: amounts[0] ? amounts[0].replace(/[$,]/g, '') : '0',
