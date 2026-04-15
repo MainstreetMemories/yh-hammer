@@ -224,7 +224,10 @@ app.post('/api/request-install', async (req, res) => {
 app.post('/api/extract-data', async (req, res) => {
   try {
     const apiKey = process.env.OPENROUTER_API_KEY || process.env.openrouter_api_key;
-    if (!apiKey) return res.status(500).json({ error: 'API key not configured' });
+    if (!apiKey) {
+      console.log('Looking for API key, env vars with api:', Object.keys(process.env).filter(k => k.toLowerCase().includes('api')));
+      return res.status(500).json({ error: 'API key not configured' });
+    }
     
     const { file, isPdf } = req.body;
     if (!file) return res.status(400).json({ error: 'No file provided' });
