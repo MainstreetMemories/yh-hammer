@@ -157,11 +157,6 @@
     }
 
     async function extractData(imageData, isPdf) {
-      const apiKey = process.env.OPENROUTER_API_KEY || window.OPENROUTER_API_KEY;
-      if (!apiKey) return { error: 'API key not configured' };
-      
-      const imageUrl = isPdf ? 'data:image/jpeg;base64,' + imageData : 'data:image/jpeg;base64,' + imageData;
-      
       const response = await fetch(API + '/api/extract-data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
