@@ -242,10 +242,10 @@ app.post('/api/extract-data', async (req, res) => {
       body: JSON.stringify({
         model: 'anthropic/claude-3-haiku',
         messages: [{ role: 'user', content: [
-          { type: 'text', text: 'Extract from contract: Owner, FullAddress (street,city,state,zip all together), Phone, Email, Date, TotalCost, TOOP, DripEdgeColor, VentColor. Format: Owner:Value Address:Value Phone:Value Email:Value Date:Value TotalCost:Value TOOP:Value DripEdge:Value VentColor:Value' },
+          { type: 'text', text: 'Read this contract and tell me: WHO is the owner (name), WHAT is the property address, WHAT is the phone number, WHAT is the email. Answer in simple format: Owner=NAME | Address=STREET CITY STATE ZIP | Phone=NUMBER | Email=EMAIL' },
           { type: 'image_url', image_url: { url: imageData } }
         ]}],
-        max_tokens: 2000
+        max_tokens: 1500
       })
     });
     
@@ -263,18 +263,25 @@ app.post('/api/extract-data', async (req, res) => {
     
     console.log('AI response:', text);
     
-    // Parse the simpler format
-    var owner = field('Owner') || field('Name') || '';
-    var phone = field('Phone') || '';
-    var email = field('Email') || '';
-    var contractDate = field('Date') || '';
-    var totalCost = field('TotalCost') ? field('TotalCost').replace(/[$,]/g, '') : (amounts[0] ? amounts[0].replace(/[$,]/g, '') : '0');
-    var toooP = field('TOOP') ? field('TOOP').replace(/[$,]/g, '') : (amounts[1] ? amounts[1].replace(/[$,]/g, '') : '0');
-    var dripEdgeColor = field('DripEdge') || '';
-    var ventilationColor = field('VentColor') || '';
+    // Simple parsing - look for patterns
+    var ownerMatch = text.match(/Owner=([^|]+)/i);
+    var owner = ownerMatch ? ownerMatch[1].trim() : '';
     
-    // Use the full address as-is
-    var fullAddress = field('Address') || '';
+    var addressMatch = text.match(/Address=([^|]+)/i);
+    var fullAddress = addressMatch ? addressMatch[1].trim() : '';
+    
+    var phoneMatch = text.match(/Phone=([^|]+)/i);
+    var phone = phoneMatch ? phoneMatch[1].trim() : '';
+    
+    var emailMatch = text.match(/Email=([^|]+)/i);
+    var email = emailMatch ? emailMatch[1].trim() : '';
+    
+    // Default the rest
+    var contractDate = '';
+    var totalCost = '0';
+    var toooP = '0';
+    var dripEdgeColor = '';
+    var ventilationColor = '';
     
     res.json({ success: true, data: {
       owner: owner,
