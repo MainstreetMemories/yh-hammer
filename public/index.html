@@ -700,41 +700,54 @@ function showConfirmDialog(data) {
       document.getElementById('progress').className = 'mt-6';
       document.getElementById('progress-text').textContent = 'Reading...';
       
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
+      const isPdf = isPdfFile(file);
+      let imageData;
       
-      reader.onload = async function() {
-        const imageData = reader.result.split(',')[1];
-        document.getElementById('progress-text').textContent = 'Processing...';
-        
-        const response = await fetch(API + '/api/upload-json', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ file: imageData, isPdf: false })
+      if (isPdf) {
+        document.getElementById('progress-text').textContent = 'Converting PDF...';
+        imageData = await convertPdfToImages(file);
+        imageData = imageData.join('||PAGE||');
+      } else {
+        const reader = new FileReader();
+        imageData = await new Promise((resolve) => {
+          reader.onload = () => resolve(reader.result.split(',')[1]);
+          reader.readAsDataURL(file);
         });
+      }
+      
+      document.getElementById('progress-text').textContent = 'Extracting data...';
+      
+      const response = await fetch(API + '/api/extract-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ file: imageData, isPdf: isPdf })
+      });
+      
+      const result = await response.json();
+      document.getElementById('progress').className = 'hidden';
+      
+      if (result.success && result.data) {
+        pendingData = result.data;
+        // Build preview
+        let html = '<div class="glass rounded-xl p-6 mb-4">';
+        html += '<h3 class="text-yellow-500 font-bold text-xl mb-4">Confirm Data</h3>';
+        html += '<div class="mb-3"><label class="text-gray-400">Month:</label>';
+        html += '<select id="confirm-month" class="w-full bg-gray-800 text-white px-2 py-1 rounded">';
+        const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        const currentMonth = new Date().toLocaleString('default', { month: 'long' });
+        months.forEach(m => html += '<option value="' + m + '"' + (m === currentMonth ? ' selected' : '') + '>' + m + '</option>');
+        html += '</select></div>';
+        ['owner','address','phone','email','totalCost','toooP','contractDate','manufacturer','shingleType','shingleColor'].forEach(f => {
+          html += '<div class="mb-2"><label class="text-gray-400">' + f + ':</label><input id="confirm-' + f + '" value="' + (result.data[f] || '') + '" class="w-full bg-gray-800 text-white px-2 py-1 rounded"></div>';
+        });
+        html += '<button onclick="confirmAndSave()" class="btn-primary w-full py-3 mt-4 rounded-xl">Save to Spreadsheet</button>';
+        html += '<button onclick="location.reload()" class="btn-secondary w-full py-2 mt-2 rounded-xl">Cancel</button>';
+        html += '</div>';
         
-        const result = await response.json();
-        document.getElementById('progress').className = 'hidden';
-        
-        if (result.success && result.previewData) {
-          pendingData = result.previewData;
-          // Build preview
-          let html = '<div class="glass rounded-xl p-6 mb-4">';
-          html += '<h3 class="text-yellow-500 font-bold text-xl mb-4">Confirm Data</h3>';
-          ['owner','address','phone','email','totalCost','toooP','contractDate','manufacturer','shingleType','shingleColor'].forEach(f => {
-            if (result.previewData[f]) {
-              html += '<div class="mb-2"><label class="text-gray-400">' + f + ':</label><input id="confirm-' + f + '" value="' + result.previewData[f] + '" class="w-full bg-gray-800 text-white px-2 py-1 rounded"></div>';
-            }
-          });
-          html += '<button onclick="confirmAndSave()" class="btn-primary w-full py-3 mt-4 rounded-xl">Save to Spreadsheet</button>';
-          html += '<button onclick="location.reload()" class="btn-secondary w-full py-2 mt-2 rounded-xl">Cancel</button>';
-          html += '</div>';
-          
-          document.getElementById('menu').innerHTML = html;
-        } else {
-          alert('Error: ' + (result.error || 'Could not extract'));
-        }
-      };
+        document.getElementById('menu').innerHTML = html;
+      } else {
+        alert('Error: ' + (result.error || 'Could not extract'));
+      }
       
       event.target.value = '';
     }
@@ -742,23 +755,25 @@ function showConfirmDialog(data) {
     async function confirmAndSave() {
       if (!pendingData) return;
       // Update with edited values
+      pendingData.month = document.getElementById('confirm-month').value;
       ['owner','address','phone','email','totalCost','toooP','contractDate','manufacturer','shingleType','shingleColor'].forEach(f => {
         const el = document.getElementById('confirm-' + f);
         if (el) pendingData[f] = el.value;
       });
       
-      pendingData.month = 'April';
-      pendingData.row = 999;
+      document.getElementById('progress').className = 'mt-6';
+      document.getElementById('progress-text').textContent = 'Saving...';
       
-      const response = await fetch(API + '/api/save-confirmed', {
+      const response = await fetch(API + '/api/save-extracted', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(pendingData)
       });
       
       const result = await response.json();
+      document.getElementById('progress').className = 'hidden';
       if (result.success) {
-        alert('Saved!');
+        alert('Saved to ' + pendingData.month + '!');
         location.reload();
       } else {
         alert('Error: ' + result.error);
