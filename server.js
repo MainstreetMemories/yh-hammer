@@ -239,10 +239,10 @@ app.post('/api/extract-data', async (req, res) => {
       body: JSON.stringify({
         model: 'anthropic/claude-3-haiku',
         messages: [{ role: 'user', content: [
-          { type: 'text', text: 'Extract from any page: Contract Date (after "YHP Representative Signature"). Format each as: Field: Value' },
+          { type: 'text', text: 'Extract from this contract: Owner Name, Property Address (street, city, state, zip), Phone Number, Email, Contract Date, Total Contract Amount, T.O.O.P (total out of pocket), Drip Edge Color, Ventilation Color. Format each as: Owner: Value, Address: Value, Phone: Value, Email: Value, Contract Date: Value, Total Cost: Value, T.O.O.P: Value, Drip Edge Color: Value, Ventilation Color: Value' },
           { type: 'image_url', image_url: { url: imageData } }
         ]}],
-        max_tokens: 1500
+        max_tokens: 2000
       })
     });
     
@@ -254,17 +254,21 @@ app.post('/api/extract-data', async (req, res) => {
     const field = function(n) { var m = text.match(new RegExp('(?:Field:\\s*)?' + n + ':\\s*(.+)', 'i')); return m ? m[1].trim() : ''; };
     var amounts = text.match(/\$[\d,]+(?:\.\d{2})?/g) || [];
     
+    console.log('AI response:', text);
+    
     res.json({ success: true, data: {
       owner: field('Owner') || field('Name') || '',
       address: [field('Address'), field('City'), field('State'), field('Zip')].filter(function(x) { return x; }).join(', ') || field('Address') || '',
       phone: field('Phone') || '',
       email: field('Email') || '',
-      totalCost: amounts[0] ? amounts[0].replace(/[$,]/g, '') : '0',
+      totalCost: field('Total Cost') ? field('Total Cost').replace(/[$,]/g, '') : (amounts[0] ? amounts[0].replace(/[$,]/g, '') : '0'),
       toooP: field('T.O.O.P') ? field('T.O.O.P').replace(/[$,]/g, '') : (amounts[1] ? amounts[1].replace(/[$,]/g, '') : '0'),
       contractDate: field('Contract Date') || '',
-      manufacturer: field('Manufacturer') || '',
-      shingleType: field('Shingle Type') || '',
-      shingleColor: field('Shingle Color') || '',
+      dripEdgeColor: field('Drip Edge Color') || '',
+      ventilationColor: field('Ventilation Color') || '',
+      manufacturer: '',
+      shingleType: '',
+      shingleColor: '',
       notes: ''
     }});
   } catch (err) {
