@@ -101,6 +101,7 @@ app.post('/api/save-extracted', async (req, res) => {
     if (!month || !owner) return res.status(400).json({ error: 'Missing month or owner' });
     
     const rowData = [
+      
       address || '', '', contractDate || '', '', '', owner || '', totalCost || '', '0', '0', '0', totalCost || '', toooP || '', '0', '0', '',
       '', phone || '', email || '', '', dripEdgeColor || '', ventilationColor || '', manufacturer || '', shingleType || '', shingleColor || '', '', notes || '',
       '', '', '', '', '', ''
