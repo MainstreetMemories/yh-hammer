@@ -5,136 +5,108 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Yellow Hammer Properties</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- PDF.js for converting scanned PDFs to images -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
   <style>
-    body { background: #0a0a0a; min-height: 100vh; }
-    .glass { background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
-    .btn-primary { background: linear-gradient(135deg,#eab308,#ca8a04); }
-    .btn-primary:hover { transform: translateY(-2px); }
-    .btn-secondary { background: linear-gradient(135deg,#3b82f6,#2563eb); }
-    .btn-danger { background: linear-gradient(135deg,#ef4444,#dc2626); }
-    .logo-glow { filter: drop-shadow(0 0 20px rgba(234,179,8,0.4)); }
+    body { background: #1a1a2e; color: #fff; font-family: system-ui, sans-serif; }
+    .glass { background: #16213e; }
+    .btn-primary { background: #f4d03f; color: #1a1a2e; }
+    .btn-primary:hover { background: #d4b12f; }
+    .btn-secondary { background: #e74c3c; color: #fff; }
+    .btn-success { background: #27ae60; color: #fff; }
   </style>
 </head>
-<body class="bg-neutral-950">
-  <div class="py-8 px-4 text-center">
-    <img src="LOGO.png" alt="Yellow Hammer" class="h-28 mx-auto mb-3 logo-glow" onerror="this.style.display='none';this.nextElementSibling.style.display='block'" onload="this.nextElementSibling.style.display='none'">
-    <div class="text-5xl font-black" style="display:none;"><span class="text-yellow-500">YELLOW</span><span class="text-white">HAMMER</span></div>
-  </div>
-
-  <div class="max-w-md mx-auto px-4 pb-8">
-    <!-- Main Menu -->
-    <div id="menu" class="grid gap-5">
-      <button id="upload-btn" class="btn-primary py-7 px-5 rounded-3xl text-white font-bold text-xl flex items-center justify-center gap-4">
-        <span>📷 Upload Contract</span>
+<body class="p-6">
+  <div class="max-w-2xl mx-auto">
+    <h1 class="text-3xl font-bold text-center text-yellow-500 mb-8">Yellow Hammer Properties</h1>
+    
+    <div id="menu" class="space-y-4">
+      <button onclick="handleUpload()" class="btn-primary w-full py-4 rounded-xl font-bold text-xl">
+        📷 Upload Contract
       </button>
       
-      <button onclick="showViewJobs()" class="btn-secondary py-5 px-5 rounded-2xl text-white font-bold text-lg">
-        📋 View Jobs
+      <button onclick="alert('Select a job first')" class="btn-secondary w-full py-3 rounded-xl font-bold">
+        📋 Request Estimate
       </button>
     </div>
-
-    <!-- Upload Form (hidden initially) -->
-    <div id="upload-form" class="hidden">
-      <button onclick="showMenu()" class="mb-4 text-yellow-500">← Back</button>
-      <div class="glass rounded-2xl p-6">
-        <h2 class="text-white text-xl font-bold mb-4">Confirm Data</h2>
-        
-        <div class="mb-3">
-          <label class="text-gray-400 text-sm">Month:</label>
-          <select id="month" class="w-full bg-gray-800 text-white px-3 py-2 rounded-lg"></select>
-        </div>
-        
-        <div class="space-y-3">
-          <div><label class="text-gray-400 text-sm">Owner:</label><input id="owner" class="w-full bg-gray-800 text-white px-3 py-2 rounded-lg"></div>
-          <div><label class="text-gray-400 text-sm">Address:</label><input id="address" class="w-full bg-gray-800 text-white px-3 py-2 rounded-lg"></div>
-          <div><label class="text-gray-400 text-sm">Phone:</label><input id="phone" class="w-full bg-gray-800 text-white px-3 py-2 rounded-lg"></div>
-          <div><label class="text-gray-400 text-sm">Email:</label><input id="email" class="w-full bg-gray-800 text-white px-3 py-2 rounded-lg"></div>
-          <div><label class="text-gray-400 text-sm">Contract Date:</label><input type="date" id="contractDate" class="w-full bg-gray-800 text-white px-3 py-2 rounded-lg"></div>
-          <div><label class="text-gray-400 text-sm">Total Cost:</label><input id="totalCost" class="w-full bg-gray-800 text-white px-3 py-2 rounded-lg"></div>
-          <div><label class="text-gray-400 text-sm">T.O.O.P:</label><input id="toooP" class="w-full bg-gray-800 text-white px-3 py-2 rounded-lg"></div>
-          <div><label class="text-gray-400 text-sm">Drip Edge Color:</label><input id="dripEdgeColor" class="w-full bg-gray-800 text-white px-3 py-2 rounded-lg"></div>
-          <div><label class="text-gray-400 text-sm">Ventilation Color:</label><input id="ventilationColor" class="w-full bg-gray-800 text-white px-3 py-2 rounded-lg"></div>
-          <div><label class="text-gray-400 text-sm">Notes:</label><textarea id="notes" class="w-full bg-gray-800 text-white px-3 py-2 rounded-lg"></textarea></div>
-        </div>
-        
-        <button onclick="saveJob()" class="btn-primary w-full py-3 mt-6 rounded-xl text-white font-bold">💾 Save to Spreadsheet</button>
-      </div>
-    </div>
-
-    <!-- Jobs List (hidden initially) -->
-    <div id="jobs-view" class="hidden">
-      <button onclick="showMenu()" class="mb-4 text-yellow-500">← Back</button>
-      <h2 class="text-white text-2xl font-bold mb-4">Job Records</h2>
-      <div id="month-tabs" class="flex flex-wrap gap-2 mb-4"></div>
-      <div id="jobs-list" class="space-y-3"></div>
-    </div>
-
-    <!-- Progress -->
+    
     <div id="progress" class="hidden mt-6 text-center">
-      <div class="glass rounded-2xl p-8">
-        <div class="animate-spin h-12 w-12 border-4 border-yellow-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-        <p class="text-yellow-500" id="progress-text">Processing...</p>
-      </div>
+      <p class="text-white" id="progress-text">Processing...</p>
     </div>
   </div>
-
-  <!-- Hidden file input -->
-  <input type="file" id="file-input" accept="image/*,.pdf" style="position:absolute;opacity:0;width:1px;height:1px;">
 
   <script>
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     const API = window.location.origin;
-
-    // Set up month dropdown
-    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-    const currentMonth = new Date().toLocaleString('default', { month: 'long' });
-    document.getElementById('month').innerHTML = months.map(m => 
-      '<option value="' + m + '"' + (m === currentMonth ? ' selected' : '') + '>' + m + '</option>'
-    ).join('');
-
-    // Upload button click
-    document.getElementById('upload-btn').addEventListener('click', function() {
-      document.getElementById('file-input').click();
-    });
-
-    // File input change
-    document.getElementById('file-input').addEventListener('change', function(e) {
-      if (e.target.files.length > 0) {
-        processFile(e.target.files[0]);
-      }
-    });
-
-    async function processFile(file) {
-      showProgress('Reading file...');
-      
-      const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-      let imageData;
-      
-      try {
+    
+    function handleUpload() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*,.pdf';
+      input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        showProgress('Reading file...');
+        
+        let imageData;
+        const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+        
         if (isPdf) {
-          showProgress('Converting PDF...');
-          imageData = await convertPdfToImage(file);
+          showProgress('Converting PDF to image...');
+          imageData = await convertPdfToImages(file);
         } else {
-          imageData = await readFileAsBase64(file);
+          imageData = await readFile(file);
         }
         
         showProgress('Extracting data with AI...');
-        const result = await extractData(imageData, isPdf);
         
-        if (result.success && result.data) {
-          showUploadForm(result.data);
-        } else {
-          alert('Error: ' + (result.error || 'Could not extract data'));
-          showMenu();
+        try {
+          const response = await fetch(API + '/api/extract-data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ file: imageData, isPdf: isPdf })
+          });
+          
+          const result = await response.json();
+          
+          if (result.error) {
+            alert('Error: ' + result.error);
+            hideProgress();
+          } else if (result.success && result.data) {
+            showConfirmation(result.data);
+          } else {
+            alert('No data extracted - try a clearer image');
+            hideProgress();
+          }
+        } catch (err) {
+          alert('AI DATA FAILED: ' + err.message);
+          hideProgress();
         }
-      } catch (err) {
-        alert('Error: ' + err.message);
-        showMenu();
-      }
+      };
+      input.click();
     }
-
-    function readFileAsBase64(file) {
+    
+    // Convert PDF to images using PDF.js
+    async function convertPdfToImages(file) {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+      
+      // Convert first page to image
+      const page = await pdf.getPage(1);
+      const viewport = page.getViewport({ scale: 2 });
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const context = canvas.getContext('2d');
+      
+      await page.render({ canvasContext: context, viewport: viewport }).promise;
+      
+      return canvas.toDataURL('image/jpeg').split(',')[1];
+    }
+    
+    function readFile(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result.split(',')[1]);
@@ -142,153 +114,73 @@
         reader.readAsDataURL(file);
       });
     }
-
-    async function convertPdfToImage(file) {
-      const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
-      const page = await pdf.getPage(1);
-      const viewport = page.getViewport({ scale: 2 });
-      const canvas = document.createElement('canvas');
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-      const context = canvas.getContext('2d');
-      await page.render({ canvasContext: context, viewport: viewport }).promise;
-      return canvas.toDataURL('image/jpeg').split(',')[1];
-    }
-
-    async function extractData(imageData, isPdf) {
-      const response = await fetch(API + '/api/extract-data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ file: imageData, isPdf: isPdf })
+    
+    function showConfirmation(data) {
+      const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      const currentMonth = new Date().toLocaleString('default', { month: 'long' });
+      
+      let html = '<div class="glass rounded-xl p-4">';
+      html += '<h3 class="text-yellow-500 font-bold text-lg mb-3">Confirm Data</h3>';
+      html += '<div class="mb-3"><label class="text-gray-400 text-sm">Month:</label>';
+      html += '<select id="month" class="w-full bg-gray-800 text-white px-2 py-1 rounded">';
+      months.forEach(m => html += '<option value="' + m + '"' + (m === currentMonth ? ' selected' : '') + '>' + m + '</option>');
+      html += '</select></div>';
+      
+      const fields = ['owner','address','phone','email','totalCost','toooP','contractDate','manufacturer','shingleType','shingleColor'];
+      fields.forEach(f => {
+        html += '<div class="mb-2"><label class="text-gray-400 text-sm">' + f + ':</label>';
+        html += '<input id="' + f + '" value="' + (data[f] || '') + '" class="w-full bg-gray-800 text-white px-2 py-1 rounded"></div>';
       });
       
-      return await response.json();
+      html += '<button onclick="saveData()" class="btn-success w-full py-2 mt-4 rounded">💾 Save</button>';
+      html += '<button onclick="location.reload()" class="btn-secondary w-full py-2 mt-2 rounded">Cancel</button>';
+      html += '</div>';
+      
+      document.getElementById('menu').innerHTML = html;
     }
-
-    async function saveJob() {
+    
+    async function saveData() {
       const data = {
         month: document.getElementById('month').value,
         owner: document.getElementById('owner').value,
         address: document.getElementById('address').value,
         phone: document.getElementById('phone').value,
         email: document.getElementById('email').value,
-        contractDate: document.getElementById('contractDate').value,
         totalCost: document.getElementById('totalCost').value,
         toooP: document.getElementById('toooP').value,
-        dripEdgeColor: document.getElementById('dripEdgeColor').value,
-        ventilationColor: document.getElementById('ventilationColor').value,
-        notes: document.getElementById('notes').value
+        contractDate: document.getElementById('contractDate').value,
+        manufacturer: document.getElementById('manufacturer').value,
+        shingleType: document.getElementById('shingleType').value,
+        shingleColor: document.getElementById('shingleColor').value,
+        ventilationColor: '',
+        dripEdgeColor: '',
+        notes: ''
       };
-      
-      if (!data.month || !data.owner) {
-        alert('Month and Owner are required');
-        return;
-      }
       
       showProgress('Saving...');
       
-      try {
-        const response = await fetch(API + '/api/save-extracted', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-          alert('Saved to ' + data.month + '!');
-          location.reload();
-        } else {
-          alert('Error: ' + (result.error || 'Failed to save'));
-          showMenu();
-        }
-      } catch (err) {
-        alert('Error: ' + err.message);
-        showMenu();
+      const response = await fetch(API + '/api/save-extracted', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        alert('✅ Saved to ' + data.month + ' for ' + data.owner);
+        location.reload();
+      } else {
+        alert('Error: ' + (result.error || 'Failed'));
+        hideProgress();
       }
     }
-
-    async function showViewJobs() {
-      showProgress('Loading jobs...');
-      
-      try {
-        const response = await fetch(API + '/api/jobs');
-        const jobs = await response.json();
-        
-        const monthList = Object.keys(jobs);
-        const defaultMonth = monthList.includes('April') ? 'April' : monthList[0];
-        
-        document.getElementById('month-tabs').innerHTML = monthList.map(m => 
-          '<button onclick="showMonth(\'' + m + '\')" class="px-4 py-2 rounded-lg font-semibold text-sm">' + m + '</button>'
-        ).join('');
-        
-        showMonth(defaultMonth);
-        
-        document.getElementById('menu').classList.add('hidden');
-        document.getElementById('jobs-view').classList.remove('hidden');
-      } catch (err) {
-        alert('Error loading jobs: ' + err.message);
-      }
-      
-      hideProgress();
-    }
-
-    async function showMonth(month) {
-      try {
-        const response = await fetch(API + '/api/jobs');
-        const jobs = await response.json();
-        const monthJobs = jobs[month] || [];
-        
-        // Update tab styles
-        document.querySelectorAll('#month-tabs button').forEach(btn => {
-          btn.className = btn.textContent === month 
-            ? 'px-4 py-2 rounded-lg font-semibold text-sm bg-yellow-500 text-black'
-            : 'px-4 py-2 rounded-lg font-semibold text-sm bg-white/10 text-gray-400';
-        });
-        
-        if (monthJobs.length === 0) {
-          document.getElementById('jobs-list').innerHTML = '<p class="text-gray-500">No jobs this month</p>';
-          return;
-        }
-        
-        document.getElementById('jobs-list').innerHTML = monthJobs.map(j => 
-          '<div class="glass rounded-xl p-4"><div class="text-white font-bold">' + (j.owner || 'Unknown') + '</div>' +
-          '<div class="text-gray-400 text-sm">' + (j.address || 'No address') + '</div></div>'
-        ).join('');
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    function showUploadForm(data) {
-      hideProgress();
-      document.getElementById('menu').classList.add('hidden');
-      document.getElementById('upload-form').classList.remove('hidden');
-      
-      // Fill form with extracted data
-      document.getElementById('owner').value = data.owner || '';
-      document.getElementById('address').value = data.address || '';
-      document.getElementById('phone').value = data.phone || '';
-      document.getElementById('email').value = data.email || '';
-      document.getElementById('totalCost').value = data.totalCost || '';
-      document.getElementById('toooP').value = data.toooP || '';
-      document.getElementById('contractDate').value = data.contractDate || '';
-    }
-
-    function showMenu() {
-      document.getElementById('menu').classList.remove('hidden');
-      document.getElementById('upload-form').classList.add('hidden');
-      document.getElementById('jobs-view').classList.add('hidden');
-      hideProgress();
-    }
-
+    
     function showProgress(text) {
       document.getElementById('progress').classList.remove('hidden');
       document.getElementById('progress-text').textContent = text;
     }
-
+    
     function hideProgress() {
       document.getElementById('progress').classList.add('hidden');
     }
