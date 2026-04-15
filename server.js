@@ -53,7 +53,7 @@ app.post('/api/extract-data', async (req, res) => {
       body: JSON.stringify({
         model: 'anthropic/claude-3-haiku',
         messages: [{ role: 'user', content: [
-          { type: 'text', text: 'Extract from FIRST page: Owner, Address, City, State, Zip, Phone, Email, Total Cost. Extract from SECOND page: Contract Date (after "YHP Representative Signature"). Format each as: Field: Value' },
+          { type: 'text', text: 'Extract from any page: Contract Date (after "YHP Representative Signature"). Format each as: Field: Value' },
           { type: 'image_url', image_url: { url: isPdf ? 'data:image/png;base64,' + file.split('||PAGE||')[0] : 'data:image/jpeg;base64,' + file } }
         ]}],
         max_tokens: 1500
