@@ -41,6 +41,58 @@ app.get('/api/jobs', async (req, res) => {
   }
 });
 
+// Upload JSON - returns previewData for confirmation (same as extract-data but different response format)
+app.post('/api/upload-json', async (req, res) => {
+  try {
+    const apiKey = process.env.OPENROUTER_API_KEY || process.env.openrouter_api_key;
+    if (!apiKey) return res.status(500).json({ error: 'API key not configured' });
+    
+    const { file, isPdf, preview } = req.body;
+    if (!file) return res.status(400).json({ error: 'No file provided' });
+    
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}`, 'HTTP-Referer': 'https://yh-hammer.onrender.com', 'X-Title': 'Yellow Hammer' },
+      body: JSON.stringify({
+        model: 'anthropic/claude-3-haiku',
+        messages: [{ role: 'user', content: [
+          { type: 'text', text: 'Extract from this contract: Owner Name, Full Property Address (street,city,state,zip), Phone Number, Email, Total Contract Amount, T.O.O.P (total out of pocket), Contract Date, Manufacturer, Shingle Type, Shingle Color, Ventilation Color, Drip Edge Color. Format each as: Field: Value' },
+          { type: 'image_url', image_url: { url: isPdf ? `data:image/jpeg;base64,${file.split('||PAGE||')[0]}` : `data:image/jpeg;base64,${file}` } }
+        ]}],
+        max_tokens: 2000
+      })
+    });
+    
+    if (!response.ok) return res.status(500).json({ error: 'AI extraction failed' });
+    
+    const data = await response.json();
+    const text = data.choices?.[0]?.message?.content || '';
+    
+    const field = (n) => { const m = text.match(new RegExp(`(?:Field:\\s*)?${n}:\\s*(.+)`,'i')); return m ? m[1].trim() : ''; };
+    const amounts = text.match(/\$[\d,]+(?:\.\d{2})?/g) || [];
+    
+    const extracted = {
+      owner: field('Owner') || field('Name') || '',
+      address: field('Address') || field('Street') || '',
+      phone: field('Phone') || '',
+      email: field('Email') || '',
+      totalCost: amounts[0]?.replace(/[$,]/g, '') || '0',
+      toooP: field('T.O.O.P') || field('Out of Pocket') || amounts[1]?.replace(/[$,]/g, '') || '0',
+      contractDate: field('Date') || field('Contract Date') || '',
+      manufacturer: field('Manufacturer') || '',
+      shingleType: field('Type') || field('Shingle Type') || '',
+      shingleColor: field('Color') || field('Shingle Color') || '',
+      ventilationColor: field('Ventilation') || '',
+      dripEdgeColor: field('Drip Edge') || '',
+      notes: field('Notes') || ''
+    };
+    
+    res.json({ success: true, previewData: extracted });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Extract data (for confirmation flow)
 app.post('/api/extract-data', async (req, res) => {
   try {
