@@ -233,6 +233,20 @@
     }
 
     function saveData() {
+      // Calculate month from contract date
+      const contractDateVal = document.getElementById('contractDate')?.value || '';
+      let month = 'April'; // default
+      if (contractDateVal) {
+        const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        // Try to parse date ( formats like 3/19/26, 03/19/2026, etc)
+        const dateMatch = contractDateVal.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+        if (dateMatch) {
+          const m = parseInt(dateMatch[1]) - 1;
+          if (m >= 0 && m <= 11) month = months[m];
+        }
+      }
+      data.month = month;
+      
       const fields = [
         'address','certOfComp','contractDate','estimateDate','installDate','owner',
         'totalCost','requiredDownPayment','financeAmount','additionalExpense',
@@ -242,7 +256,6 @@
         'phone','email'
       ];
       fields.forEach(f => data[f] = document.getElementById(f)?.value || '');
-      data.month = 'April';
       
       fetch(API + '/api/save-extracted', {
         method: 'POST',
