@@ -5,103 +5,109 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
+    * { font-family: 'Inter', sans-serif; }
     body {
-      background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+      background: #0f0f0f;
       min-height: 100vh;
+      background-image: 
+        radial-gradient(ellipse at top, rgba(234,179,8,0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at bottom right, rgba(59,130,246,0.05) 0%, transparent 50%);
     }
-    .btn-primary {
-      background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%);
-      transition: all 0.3s ease;
+    .btn-slick {
+      background: linear-gradient(145deg, #1f1f1f, #171717);
+      border: 1px solid #2a2a2a;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(234, 179, 8, 0.4);
-    }
-    .btn-secondary {
-      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-      transition: all 0.3s ease;
-    }
-    .btn-secondary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
-    }
-    .card {
-      background: rgba(255, 255, 255, 0.05);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    .input-field {
-      background: rgba(0, 0, 0, 0.3);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      transition: all 0.3s ease;
-    }
-    .input-field:focus {
+    .btn-slick:hover {
+      background: linear-gradient(145deg, #262626, #1f1f1f);
       border-color: #eab308;
-      outline: none;
-      box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.2);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(234,179,8,0.15);
     }
+    .btn-slick:active { transform: translateY(0); }
+    .glass {
+      background: rgba(20, 20, 20, 0.8);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .input-slick {
+      background: #0a0a0a;
+      border: 1px solid #262626;
+      transition: all 0.2s;
+    }
+    .input-slick:focus {
+      border-color: #eab308;
+      box-shadow: 0 0 0 3px rgba(234,179,8,0.1);
+    }
+    .glow { box-shadow: 0 0 60px rgba(234,179,8,0.1); }
   </style>
 </head>
-<body class="p-6">
-  <!-- Header with Logo -->
-  <div class="text-center mb-8">
-    <img src="/LOGO.png" alt="Yellow Hammer" class="h-24 mx-auto mb-4">
-    <h1 class="text-3xl text-yellow-500 font-bold tracking-wide">YELLOW HAMMER</h1>
-    <p class="text-gray-400 mt-2">Roofing Contract Management</p>
-  </div>
+<body class="p-4">
+  <div class="max-w-lg mx-auto">
+    <!-- Header -->
+    <div class="text-center mb-8 pt-4">
+      <img src="/LOGO.png" alt="Yellow Hammer" class="h-20 mx-auto mb-3">
+      <h1 class="text-2xl text-yellow-400 font-extrabold tracking-wider">YELLOW HAMMER</h1>
+      <p class="text-zinc-500 text-sm mt-1">Contract Management</p>
+    </div>
   
-  <!-- Main Menu -->
-  <div id="menu" class="max-w-md mx-auto space-y-4">
-    <button onclick="uploadClick()" class="btn-primary w-full py-5 px-6 rounded-xl font-bold text-black text-lg flex items-center justify-center gap-3">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-      </svg>
-      Upload Contract
-    </button>
-    
-    <div class="grid grid-cols-2 gap-4">
-      <button onclick="requestEstimate()" class="btn-secondary py-4 px-4 rounded-xl font-bold text-white flex items-center justify-center gap-2">
-        <span>📧</span> Request Estimate
+    <!-- Main Menu -->
+    <div id="menu" class="space-y-3">
+      <!-- Primary Upload Button -->
+      <button onclick="uploadClick()" class="btn-slick w-full py-5 px-5 rounded-2xl font-semibold text-yellow-400 flex items-center justify-center gap-3">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        Upload Contract
       </button>
-      <button onclick="viewJobs()" class="bg-emerald-600 hover:bg-emerald-500 py-4 px-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all">
-        <span>📋</span> View Jobs
-      </button>
-    </div>
-    
-    <div class="grid grid-cols-2 gap-4">
-      <button onclick="addEstimate()" class="bg-purple-600 hover:bg-purple-500 py-4 px-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all">
-        <span>📝</span> Add Estimate
-      </button>
-      <button onclick="addInstallDate()" class="bg-orange-600 hover:bg-orange-500 py-4 px-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all">
-        <span>📅</span> Add Install Date
-      </button>
-    </div>
-  </div>
-
-  <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFile(this)" class="hidden">
-
-  <!-- Confirm Data Card -->
-  <div id="confirm" class="hidden max-w-md mx-auto mt-8">
-    <div class="card rounded-2xl p-6">
-      <h2 class="text-2xl text-yellow-500 font-bold mb-6 text-center">Confirm Data</h2>
-      <div id="fields" class="space-y-4"></div>
-      <div class="flex gap-4 mt-6">
-        <button onclick="saveData()" class="btn-primary flex-1 py-3 px-6 rounded-xl font-bold text-black">Save</button>
-        <button onclick="showMenu()" class="bg-red-600 hover:bg-red-500 flex-1 py-3 px-6 rounded-xl font-bold text-white transition-all">Cancel</button>
+      
+      <!-- Secondary Buttons Row 1 -->
+      <div class="grid grid-cols-2 gap-3">
+        <button onclick="requestEstimate()" class="btn-slick py-4 px-4 rounded-2xl font-medium text-white flex items-center justify-center gap-2">
+          <span class="text-lg">📧</span> Request Estimate
+        </button>
+        <button onclick="viewJobs()" class="btn-slick py-4 px-4 rounded-2xl font-medium text-white flex items-center justify-center gap-2">
+          <span class="text-lg">📋</span> View Jobs
+        </button>
+      </div>
+      
+      <!-- Secondary Buttons Row 2 -->
+      <div class="grid grid-cols-2 gap-3">
+        <button onclick="addEstimate()" class="btn-slick py-4 px-4 rounded-2xl font-medium text-white flex items-center justify-center gap-2">
+          <span class="text-lg">📝</span> Add Estimate
+        </button>
+        <button onclick="addInstallDate()" class="btn-slick py-4 px-4 rounded-2xl font-medium text-white flex items-center justify-center gap-2">
+          <span class="text-lg">📅</span> Add Install Date
+        </button>
       </div>
     </div>
-  </div>
 
-  <!-- Progress -->
-  <div id="progress" class="hidden text-center mt-8">
-    <div class="inline-flex items-center gap-3 card py-3 px-6 rounded-xl">
-      <svg class="animate-spin h-5 w-5 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-      </svg>
-      <span class="text-yellow-500 font-medium">Processing...</span>
+    <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFile(this)" class="hidden">
+
+    <!-- Confirm Card -->
+    <div id="confirm" class="hidden">
+      <div class="glass rounded-3xl p-6 glow">
+        <h2 class="text-xl font-bold text-white mb-6 text-center">Confirm Data</h2>
+        <div id="fields" class="space-y-4"></div>
+        <div class="flex gap-3 mt-6">
+          <button onclick="saveData()" class="flex-1 bg-yellow-500 hover:bg-yellow-400 py-3 rounded-xl font-bold text-black transition-all">Save</button>
+          <button onclick="showMenu()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 py-3 rounded-xl font-medium text-white transition-all">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div id="progress" class="hidden text-center py-8">
+      <div class="glass inline-flex items-center gap-3 py-4 px-8 rounded-2xl">
+        <svg class="animate-spin h-6 w-6 text-yellow-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span class="text-yellow-400 font-medium">Processing...</span>
+      </div>
     </div>
   </div>
 
@@ -190,8 +196,8 @@
       const labels = {'owner':'Owner','address':'Address','phone':'Phone','email':'Email','totalCost':'Total Cost','toooP':'T.O.O.P'};
       let html = fields.map(f => 
         `<div>
-          <label class="text-gray-400 text-sm">${labels[f]}</label>
-          <input id="${f}" value="${(d[f]||'')}" class="input-field w-full p-3 rounded-lg text-white">
+          <label class="text-zinc-500 text-xs uppercase tracking-wide font-medium">${labels[f]}</label>
+          <input id="${f}" value="${(d[f]||'')}" class="input-slick w-full p-3.5 rounded-xl text-white text-sm mt-1">
         </div>`
       ).join('');
       document.getElementById('fields').innerHTML = html;
