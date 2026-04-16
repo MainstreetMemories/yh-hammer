@@ -125,6 +125,38 @@
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     const API = window.location.origin;
     let pendingData = null;
+    window.jobs = {};
+
+    // All fields for editing
+    const ALL_FIELDS = [
+      { key: 'address', label: 'Address' },
+      { key: 'certOfComp', label: 'Cert Of Comp' },
+      { key: 'contractDate', label: 'Contract Date' },
+      { key: 'estimateDate', label: 'Estimate Date' },
+      { key: 'installDate', label: 'Install Date' },
+      { key: 'owner', label: 'Owner' },
+      { key: 'totalCost', label: 'Total Cost' },
+      { key: 'requiredDownPayment', label: 'Required Down Payment' },
+      { key: 'financeAmount', label: 'Finance Amount' },
+      { key: 'additionalExpense', label: 'Additional Expense' },
+      { key: 'totalBalanceDue', label: 'Total Balance Due' },
+      { key: 'toooP', label: 'T.O.O.P' },
+      { key: 'depAmtHeld', label: 'DEP Amt Held' },
+      { key: 'amountDue', label: 'Amount Due' },
+      { key: 'pmntMethod', label: 'Pmnt Method' },
+      { key: 'phone', label: 'Phone' },
+      { key: 'email', label: 'Email' },
+      { key: 'datePaid', label: 'Date Paid' },
+      { key: 'checkNum', label: 'Check #' },
+      { key: 'amountPaid', label: 'Amount Paid' },
+      { key: 'dripEdgeColor', label: 'Drip Edge Color' },
+      { key: 'ventilationColor', label: 'Ventilation Color' },
+      { key: 'manufacturer', label: 'Manufacturer' },
+      { key: 'shingleType', label: 'Shingle Type' },
+      { key: 'shingleColor', label: 'Shingle Color' },
+      { key: 'estimatedSquares', label: 'Estimated Squares' },
+      { key: 'notes', label: 'Notes' }
+    ];
 
     function showStatus(msg, err = false) {
       const el = document.getElementById('status');
@@ -537,35 +569,7 @@
       });
     }
     
-    // ALL_FIELDS moved to top
-  { key: 'address', label: 'Address' },
-  { key: 'certOfComp', label: 'Cert Of Comp' },
-  { key: 'contractDate', label: 'Contract Date' },
-  { key: 'estimateDate', label: 'Estimate Date' },
-  { key: 'installDate', label: 'Install Date' },
-  { key: 'owner', label: 'Owner' },
-  { key: 'totalCost', label: 'Total Cost' },
-  { key: 'requiredDownPayment', label: 'Required Down Payment' },
-  { key: 'financeAmount', label: 'Finance Amount' },
-  { key: 'additionalExpense', label: 'Additional Expense' },
-  { key: 'totalBalanceDue', label: 'Total Balance Due' },
-  { key: 'toooP', label: 'T.O.O.P' },
-  { key: 'depAmtHeld', label: 'DEP Amt Held' },
-  { key: 'amountDue', label: 'Amount Due' },
-  { key: 'pmntMethod', label: 'Pmnt Method' },
-  { key: 'datePaid', label: 'Date Paid' },
-  { key: 'checkNum', label: 'Check #' },
-  { key: 'amountPaid', label: 'Amount Paid' },
-  { key: 'dripEdgeColor', label: 'Drip Edge Color' },
-  { key: 'ventilationColor', label: 'Ventilation Color' },
-  { key: 'manufacturer', label: 'Manufacturer' },
-  { key: 'shingleType', label: 'Shingle Type' },
-  { key: 'shingleColor', label: 'Shingle Color' },
-  { key: 'estimatedSquares', label: 'Estimated Squares' },
-  { key: 'notes', label: 'Notes' }
-];
-
-function showConfirmDialog(data) {
+    
   // Build form with all fields
   let fieldsHtml = ALL_FIELDS.map(f => `
     <div class="flex items-center gap-2">
@@ -588,30 +592,9 @@ function showConfirmDialog(data) {
   if (fieldsContainer) {
     fieldsContainer.innerHTML = fieldsHtml;
   }
-      const container = document.getElementById('confirm-data');
-      container.innerHTML = `
-        <div class="space-y-2 text-sm">
-          <div class="flex items-center gap-2"><label class="text-gray-400 w-24">Owner:</label><input type="text" id="edit-owner" value="${data.owner || ''}" class="flex-1 bg-gray-800 text-white px-2 py-1 rounded"></div>
-          <div class="flex items-center gap-2"><label class="text-gray-400 w-24">Address:</label><input type="text" id="edit-address" value="${data.address || ''}" class="flex-1 bg-gray-800 text-white px-2 py-1 rounded"></div>
-          <div class="flex items-center gap-2"><label class="text-gray-400 w-24">Phone:</label><input type="text" id="edit-phone" value="${data.phone || ''}" class="flex-1 bg-gray-800 text-white px-2 py-1 rounded"></div>
-          <div class="flex items-center gap-2"><label class="text-gray-400 w-24">Email:</label><input type="text" id="edit-email" value="${data.email || ''}" class="flex-1 bg-gray-800 text-white px-2 py-1 rounded"></div>
-          <div class="flex items-center gap-2"><label class="text-gray-400 w-24">Total Cost:</label><input type="text" id="edit-totalCost" value="${data.totalCost || ''}" class="flex-1 bg-gray-800 text-white px-2 py-1 rounded"></div>
-          <div class="flex items-center gap-2"><label class="text-gray-400 w-24">T.O.O.P:</label><input type="text" id="edit-toooP" value="${data.toooP || ''}" class="flex-1 bg-gray-800 text-white px-2 py-1 rounded"></div>
-          <div class="flex items-center gap-2"><label class="text-gray-400 w-24">Date:</label><input type="text" id="edit-date" value="${data.date || ''}" class="flex-1 bg-gray-800 text-white px-2 py-1 rounded"></div>
-          <div class="flex items-center gap-2"><label class="text-gray-400 w-24">Vent Color:</label><input type="text" id="edit-ventilationColor" value="${data.ventilationColor || ''}" class="flex-1 bg-gray-800 text-white px-2 py-1 rounded"></div>
-          <div class="flex items-center gap-2"><label class="text-gray-400 w-24">Manufacturer:</label><input type="text" id="edit-manufacturer" value="${data.manufacturer || ''}" class="flex-1 bg-gray-800 text-white px-2 py-1 rounded"></div>
-          <div class="flex items-center gap-2"><label class="text-gray-400 w-24">Shingle Type:</label><input type="text" id="edit-shingleType" value="${data.shingleType || ''}" class="flex-1 bg-gray-800 text-white px-2 py-1 rounded"></div>
-          <div class="flex items-center gap-2"><label class="text-gray-400 w-24">Shingle Color:</label><input type="text" id="edit-shingleColor" value="${data.shingleColor || ''}" class="flex-1 bg-gray-800 text-white px-2 py-1 rounded"></div>
-          <div class="flex items-start gap-2"><label class="text-gray-400 w-24 pt-1">Notes:</label><textarea id="edit-notes" rows="3" class="flex-1 bg-gray-800 text-white px-2 py-1 rounded">${data.notes || ''}</textarea></div>
-          <div class="flex items-center gap-2 mt-3 p-3 bg-yellow-500/20 rounded-lg">
-            <input type="checkbox" id="edit-needsEstimate" ${data.needsEstimate ? 'checked' : ''} class="w-5 h-5 accent-yellow-500">
-            <label for="edit-needsEstimate" class="text-yellow-400 font-semibold">Send to Estimator (notify salesperson)</label>
-          </div>
-        </div>
-      `;
-      document.getElementById('confirm-dialog').classList.remove('hidden');
-      document.getElementById('menu').classList.add('hidden');
-    }
+  document.getElementById('confirm-dialog').classList.remove('hidden');
+  document.getElementById('menu').classList.add('hidden');
+}
 
     async function confirmSave() {
       if (!pendingData) return;
