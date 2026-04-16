@@ -83,6 +83,11 @@
           <span class="text-lg">📋</span> Add Install Date
         </button>
       </div>
+      
+      <!-- View/Edit Jobs Button -->
+      <button onclick="viewEditJobs()" class="btn-slick w-full py-4 px-4 rounded-2xl font-medium text-white flex items-center justify-center gap-2">
+        <span class="text-lg">📂</span> View/Edit Jobs
+      </button>
     </div>
 
     <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFile(this)" class="hidden">
@@ -530,6 +535,172 @@
       };
       
       fetch(API + '/api/save-install-date', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+      }).then(r => r.json()).then(result => {
+        alert(result.success ? '✓ Saved!' : 'Error: ' + result.error);
+        showMenu();
+      }).catch(err => alert('Error: ' + err.message));
+    }
+
+    // ===== VIEW/EDIT JOBS FUNCTIONS =====
+    function viewEditJobs() {
+      fetch(API + '/api/jobs')
+        .then(r => r.json())
+        .then(months => {
+          const monthNames = Object.keys(months).filter(m => m !== 'Contractor' && months[m].length > 0);
+          if (monthNames.length === 0) {
+            alert('No jobs found');
+            return;
+          }
+          
+          let html = '<div class="grid grid-cols-3 gap-2 mb-4">';
+          monthNames.forEach(m => {
+            html += `<button onclick="showEditJobsList('${m}')" class="btn-slick py-3 px-4 rounded-xl font-medium text-white">${m}</button>`;
+          });
+          html += '</div><button onclick="showMenu()" class="text-zinc-500 text-sm">← Back</button>';
+          
+          document.getElementById('menu').classList.add('hidden');
+          document.getElementById('modalTitle').innerText = 'Select Month';
+          document.getElementById('fields').innerHTML = html;
+          document.getElementById('confirm').classList.remove('hidden');
+        })
+        .catch(e => alert('Error: ' + e.message));
+    }
+    
+    function showEditJobsList(month) {
+      fetch(API + '/api/jobs')
+        .then(r => r.json())
+        .then(months => {
+          const jobs = months[month] || [];
+          if (jobs.length === 0) return;
+          
+          let html = '<div class="space-y-2">';
+          jobs.forEach(j => {
+            html += `<button onclick="showEditJobForm('${month}', ${j.row})" class="btn-slick w-full py-3 px-4 rounded-xl font-medium text-white text-left">
+              ${j.owner}<br><span class="text-zinc-500 text-sm">${j.address}</span>
+            </button>`;
+          });
+          html += '</div>';
+          
+          document.getElementById('modalTitle').innerText = 'Select Job';
+          document.getElementById('fields').innerHTML = html + '<button onclick="viewEditJobs()" class="text-zinc-500 text-sm mt-3">← Back</button>';
+        });
+    }
+    
+    function showEditJobForm(month, row) {
+      fetch(API + '/api/get-job?month=' + month + '&row=' + row)
+        .then(r => r.json())
+        .then(job => {
+          // Convert date to YYYY-MM-DD for date inputs
+          const toDateValue = (dateStr) => {
+            if (!dateStr) return '';
+            const parts = dateStr.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+            if (parts) {
+              let y = parts[3];
+              if (y.length === 2) y = '20' + y;
+              const m = parts[1].padStart(2, '0');
+              const d = parts[2].padStart(2, '0');
+              return y + '-' + m + '-' + d;
+            }
+            return '';
+          };
+          
+          // All editable fields (skipping P and AA - columns 15 and 26)
+          const editFields = [
+            {id:'address', label:'Address', val:job.address||''},
+            {id:'certOfComp', label:'Cert Of Comp', val:job.certOfComp||''},
+            {id:'contractDate', label:'Contract Date', val:toDateValue(job.contractDate)},
+            {id:'estimateDate', label:'Estimate Date', val:toDateValue(job.estimateDate)},
+            {id:'installDate', label:'Install Date', val:toDateValue(job.installDate)},
+            {id:'owner', label:'Owner', val:job.owner||''},
+            {id:'totalCost', label:'Total Cost', val:job.totalCost||''},
+            {id:'requiredDownPayment', label:'Down Payment', val:job.requiredDownPayment||''},
+            {id:'financeAmount', label:'Finance Amount', val:job.financeAmount||''},
+            {id:'additionalExpense', label:'Additional Expense', val:job.additionalExpense||''},
+            {id:'toooP', label:'T.O.O.P', val:job.toooP||''},
+            {id:'depAmtHeld', label:'DEP Amt Held', val:job.depAmtHeld||''},
+            {id:'amountDue', label:'Amount Due', val:job.amountDue||''},
+            {id:'pmntMethod', label:'Payment Method', val:job.pmntMethod||''},
+            {id:'phone', label:'Phone', val:job.phone||''},
+            {id:'email', label:'Email', val:job.email||''},
+            {id:'datePaid', label:'Date Paid', val:toDateValue(job.datePaid)},
+            {id:'checkNum', label:'Check #', val:job.checkNum||''},
+            {id:'amountPaid', label:'Amount Paid', val:job.amountPaid||''},
+            {id:'dripEdgeColor', label:'Drip Edge Color', val:job.dripEdgeColor||''},
+            {id:'ventilationColor', label:'Ventilation Color', val:job.ventilationColor||''},
+            {id:'manufacturer', label:'Manufacturer', val:job.manufacturer||''},
+            {id:'shingleType', label:'Shingle Type', val:job.shingleType||''},
+            {id:'shingleColor', label:'Shingle Color', val:job.shingleColor||''},
+            {id:'estimatedSquares', label:'Estimated Squares', val:job.estimatedSquares||''},
+            {id:'notes', label:'Notes', val:job.notes||'', isTextarea:true}
+          ];
+          
+          let html = '<div class="space-y-3 max-h-[60vh] overflow-y-auto pr-2">';
+          editFields.forEach(f => {
+            if (f.isTextarea) {
+              html += `<div>
+                <label class="text-zinc-500 text-xs uppercase tracking-wide font-medium">${f.label}</label>
+                <textarea id="${f.id}" rows="3" class="input-slick w-full p-3 rounded-xl text-white text-sm mt-1">${f.val}</textarea>
+              </div>`;
+            } else if (f.label.includes('Date')) {
+              html += `<div>
+                <label class="text-zinc-500 text-xs uppercase tracking-wide font-medium">${f.label}</label>
+                <input id="${f.id}" type="date" value="${f.val}" class="input-slick w-full p-3 rounded-xl text-white text-sm mt-1" style="color-scheme: dark;">
+              </div>`;
+            } else {
+              html += `<div>
+                <label class="text-zinc-500 text-xs uppercase tracking-wide font-medium">${f.label}</label>
+                <input id="${f.id}" value="${f.val}" class="input-slick w-full p-3 rounded-xl text-white text-sm mt-1">
+              </div>`;
+            }
+          });
+          html += '</div>';
+          
+          document.getElementById('modalTitle').innerText = 'Edit Job';
+          document.getElementById('staticButtons').classList.add('hidden');
+          document.getElementById('fields').innerHTML = html + 
+            `<div class="flex gap-3 mt-4">
+              <button onclick="saveEditedJob('${month}', ${row})" class="flex-1 bg-yellow-500 py-3 rounded-xl font-bold text-black">Save</button>
+              <button onclick="viewEditJobs()" class="flex-1 bg-zinc-800 py-3 rounded-xl font-medium text-white">Cancel</button>
+            </div>`;
+        });
+    }
+    
+    function saveEditedJob(month, row) {
+      const data = {
+        month,
+        row,
+        address: document.getElementById('address').value,
+        certOfComp: document.getElementById('certOfComp').value,
+        contractDate: document.getElementById('contractDate').value,
+        estimateDate: document.getElementById('estimateDate').value,
+        installDate: document.getElementById('installDate').value,
+        owner: document.getElementById('owner').value,
+        totalCost: document.getElementById('totalCost').value,
+        requiredDownPayment: document.getElementById('requiredDownPayment').value,
+        financeAmount: document.getElementById('financeAmount').value,
+        additionalExpense: document.getElementById('additionalExpense').value,
+        tooooP: document.getElementById('toooP').value,
+        depAmtHeld: document.getElementById('depAmtHeld').value,
+        amountDue: document.getElementById('amountDue').value,
+        pmntMethod: document.getElementById('pmntMethod').value,
+        phone: document.getElementById('phone').value,
+        email: document.getElementById('email').value,
+        datePaid: document.getElementById('datePaid').value,
+        checkNum: document.getElementById('checkNum').value,
+        amountPaid: document.getElementById('amountPaid').value,
+        dripEdgeColor: document.getElementById('dripEdgeColor').value,
+        ventilationColor: document.getElementById('ventilationColor').value,
+        manufacturer: document.getElementById('manufacturer').value,
+        shingleType: document.getElementById('shingleType').value,
+        shingleColor: document.getElementById('shingleColor').value,
+        estimatedSquares: document.getElementById('estimatedSquares').value,
+        notes: document.getElementById('notes').value
+      };
+      
+      fetch(API + '/api/save-confirmed', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(data)
