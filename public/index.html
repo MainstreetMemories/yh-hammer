@@ -538,22 +538,7 @@
         showMenu();
       }).catch(err => alert('Error: ' + err.message));
     }
-          monthNames.forEach(m => {
-            html += `<button onclick="showInstallJobs('${m}')" class="btn-slick py-3 px-4 rounded-xl font-medium text-white">${m}</button>`;
-          });
-          html += '</div><button onclick="showMenu()" class="text-zinc-500 text-sm">← Back</button>';
-          
-          document.getElementById('menu').classList.add('hidden');
-          document.getElementById('modalTitle').innerText = 'Select Month'; document.getElementById('fields').innerHTML = html;
-          document.getElementById('confirm').classList.remove('hidden');
-        })
-        .catch(e => alert('Error: ' + e.message));
-    }
-    function viewJobs() { 
-      fetch(API + '/api/jobs').then(r => r.json()).then(j => {
-        alert('Jobs: ' + Object.keys(j).join(', '));
-      }).catch(e => alert('Error: ' + e.message));
-    }
+
   </script>
 </body>
 </html>
