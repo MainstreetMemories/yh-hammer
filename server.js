@@ -429,8 +429,14 @@ app.post('/api/save-install-date', async (req, res) => {
 });
 
 // Get contractors list
-app.get('/api/contractors', (req, res) => {
-  res.json(['Joshua Hall', 'Dylan Hall', 'Jesse Hall', 'Austin Hall', 'Jason Hall', 'Caleb Hall', 'Nathan Hall']);
+app.get('/api/contractors', async (req, res) => {
+  try {
+    const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: 'Contractor!A:A' });
+    const contractors = (r.data.values || []).map(row => row[0]).filter(c => c);
+    res.json(contractors);
+  } catch (err) {
+    res.json(['Joshua Hall', 'Dylan Hall', 'Jesse Hall', 'Austin Hall', 'Jason Hall', 'Caleb Hall', 'Nathan Hall']);
+  }
 });
 
 // Request install - GroupMe
