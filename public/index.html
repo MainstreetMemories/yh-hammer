@@ -549,41 +549,6 @@
         })
         .catch(e => alert('Error: ' + e.message));
     }
-    
-    function showInstallJobs(month) {
-      fetch(API + '/api/jobs')
-        .then(r => r.json())
-        .then(months => {
-          const jobs = months[month] || [];
-          if (jobs.length === 0) return;
-          
-          let html = '<div class="space-y-2">';
-          jobs.forEach(j => {
-            html += `<button onclick="selectInstallJob('${month}', ${j.row}, '${j.owner.replace(/'/g, "\\'")}')" class="btn-slick w-full py-3 px-4 rounded-xl font-medium text-white text-left">
-              ${j.owner}<br><span class="text-zinc-500 text-sm">${j.address}</span>
-            </button>`;
-          });
-          html += '</div>';
-          
-          document.getElementById('fields').innerHTML = '<h3 class="text-white font-bold mb-3">Select Job</h3>' + html + '<button onclick="addInstallDate()" class="text-zinc-500 text-sm mt-3">← Back</button>';
-        });
-    }
-    
-    function selectInstallJob(month, row, owner) {
-      const date = prompt('Enter proposed install date for ' + owner + ' (or leave blank):');
-      if (date === null) {
-        showMenu(); // User cancelled
-        return;
-      }
-      fetch(API + '/api/request-install', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ month, row, installDate: date || '' })
-      }).then(r => r.json()).then(result => {
-        alert(result.success ? '✓ Request sent!' : 'Error: ' + result.error);
-        showMenu();
-      }).catch(err => alert('Error: ' + err.message));
-    }
     function viewJobs() { 
       fetch(API + '/api/jobs').then(r => r.json()).then(j => {
         alert('Jobs: ' + Object.keys(j).join(', '));
