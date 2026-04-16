@@ -15,7 +15,7 @@
     <button onclick="viewJobs()" class="bg-blue-500 text-white font-bold py-4 px-6 rounded">📋 View Jobs</button>
   </div>
 
-  <input type="file" id="fileInput" onchange="handleFile(this)" class="hidden">
+  <input type="file" id="fileInput" accept="image/*" onchange="handleFile(this)" class="hidden">
 
   <div id="confirm" class="hidden mt-8 p-4 bg-gray-800 rounded">
     <h2 class="text-yellow-500 text-xl font-bold mb-4">Confirm Data</h2>
@@ -33,13 +33,22 @@
     let data = {};
 
     function uploadClick() { 
-      alert('Upload clicked - Select a contract file');
       document.getElementById('fileInput').click(); 
     }
     
     function handleFile(input) {
       if (!input.files[0]) return;
-      alert('Processing: ' + input.files[0].name);
+      
+      const file = input.files[0];
+      const fileType = file.type.toLowerCase();
+      
+      // Check if it's an image
+      if (!fileType.startsWith('image/')) {
+        alert('Please upload an image file (jpg, png). For PDFs, please take a screenshot or photo of the contract.');
+        return;
+      }
+      
+      alert('Processing: ' + file.name);
       document.getElementById('progress').classList.remove('hidden');
       
       const reader = new FileReader();
@@ -67,7 +76,7 @@
           document.getElementById('progress').classList.add('hidden');
         }
       };
-      reader.readAsDataURL(input.files[0]);
+      reader.readAsDataURL(file);
     }
 
     function showConfirm(d) {
