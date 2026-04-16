@@ -286,6 +286,41 @@ app.post('/api/request-estimate', async (req, res) => {
   }
 });
 
+// Request install date - GroupMe
+app.post('/api/request-install', async (req, res) => {
+  try {
+    const { month, row, installDate } = req.body;
+    if (!month || !row) return res.status(400).json({ error: 'Missing month or row' });
+    
+    const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: month + '!A' + row + ':Z' + row });
+    const job = r.data.values?.[0] || [];
+    const owner = job[5] || 'Unknown';
+    const address = job[0] || '';
+    const manufacturer = job[21] || '';
+    const shingleType = job[22] || '';
+    const shingleColor = job[23] || '';
+    
+    const botId = process.env.GROUPME_BOT_ID || 'a36a8a2e2fc7ad27ece3f21843';
+    const message = 'INSTALL DATE NEEDED\n' +
+      'Owner: ' + owner + '\n' +
+      'Address: ' + address + '\n' +
+      'Manufacturer: ' + manufacturer + '\n' +
+      'Shingle Type: ' + shingleType + '\n' +
+      'Shingle Color: ' + shingleColor + 
+      (installDate ? '\nProposed Date: ' + installDate : '\nProposed Date: TBD');
+    
+    await fetch('https://api.groupme.com/v3/bots/post', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bot_id: botId, text: message })
+    });
+    
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Get single job
 app.get('/api/get-job', async (req, res) => {
   try {
