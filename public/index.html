@@ -384,6 +384,19 @@
       fetch(API + '/api/get-job?month=' + month + '&row=' + row)
         .then(r => r.json())
         .then(job => {
+          // Convert date to YYYY-MM-DD for date input
+          let dateValue = '';
+          if (job.estimateDate) {
+            const parts = job.estimateDate.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+            if (parts) {
+              let y = parts[3];
+              if (y.length === 2) y = '20' + y;
+              const m = parts[1].padStart(2, '0');
+              const d = parts[2].padStart(2, '0');
+              dateValue = y + '-' + m + '-' + d;
+            }
+          }
+          
           const contractors = JSON.parse(sessionStorage.getItem('contractors') || '[]');
           const contractorOptions = contractors.map(c => 
             `<option value="${c}" ${job.manufacturer === c ? 'selected' : ''}>${c}</option>`
@@ -394,7 +407,7 @@
             `<div class="space-y-4">
               <div>
                 <label class="text-zinc-500 text-xs uppercase tracking-wide font-medium">Estimate Date</label>
-                <input id="estimateDate" type="date" value="${job.estimateDate || ''}" class="input-slick w-full p-3 rounded-xl text-white text-sm mt-1">
+                <input id="estimateDate" type="date" value="${dateValue}" class="input-slick w-full p-3 rounded-xl text-white text-sm mt-1">
               </div>
               <div>
                 <label class="text-zinc-500 text-xs uppercase tracking-wide font-medium">Primary Contractor</label>
