@@ -358,7 +358,7 @@ app.post('/api/upload-file', upload.single('file'), async (req, res) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}`, 'HTTP-Referer': 'https://yh-hammer-1.onrender.com', 'X-Title': 'Yellow Hammer' },
       body: JSON.stringify({
-        model: 'anthropic/claude-3-haiku-20240307',
+        model: 'anthropic/claude-3-haiku',
         messages: [{ role: 'user', content: [
           { type: 'text', text: 'Extract from this contract: Owner Name, Full Property Address (street,city,state,zip), Phone Number, Email, Total Contract Amount, T.O.O.P (total out of pocket), Contract Date, Manufacturer, Shingle Type, Shingle Color, Ventilation Color, Drip Edge Color. Format each as: Field: Value' },
           { type: 'image_url', image_url: { url: `data:application/pdf;base64,${pdfBase64}` } }
@@ -367,7 +367,11 @@ app.post('/api/upload-file', upload.single('file'), async (req, res) => {
       })
     });
     
-    if (!response.ok) return res.status(500).json({ error: 'AI extraction failed: ' + response.status });
+    if (!response.ok) {
+      // If PDF fails, try converting first page to image
+      // For now, return error asking for screenshot
+      return res.status(400).json({ error: 'PDF not supported by AI. Please take a screenshot/photo of the contract and upload as a JPG or PNG image instead.' });
+    }
     
     const data = await response.json();
     const text = data.choices?.[0]?.message?.content || '';
