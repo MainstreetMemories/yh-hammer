@@ -37,7 +37,7 @@ app.get('/api/jobs', async (req, res) => {
         const owner = (job[5] || '').toString().toLowerCase();
         return addr && owner && addr !== 'address' && owner !== 'owner';
       });
-      allJobs[month] = jobs.map((job, idx) => ({ row: idx + 4, address: job[0] || '', owner: job[5] || '', phone: job[15] || '', email: job[16] || '', totalCost: job[6] || '', tooop: job[11] || '' }));
+      allJobs[month] = jobs.map((job, idx) => ({ row: idx + 2, address: job[0] || '', owner: job[5] || '', phone: job[15] || '', email: job[16] || '', totalCost: job[6] || '', tooop: job[11] || '' }));
     }
     res.json(allJobs);
   } catch (err) {

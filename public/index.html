@@ -278,38 +278,55 @@
       fetch(API + '/api/jobs')
         .then(r => r.json())
         .then(months => {
-          const monthNames = Object.keys(months);
+          const monthNames = Object.keys(months).filter(m => m !== 'Contractor' && months[m].length > 0);
           if (monthNames.length === 0) {
             alert('No jobs found');
             return;
           }
-          const choice = prompt('Select month:\n' + monthNames.map((m,i) => (i+1) + '. ' + m).join('\n'));
-          const monthIndex = parseInt(choice) - 1;
-          if (monthIndex < 0 || monthIndex >= monthNames.length || isNaN(monthIndex)) return;
           
-          const month = monthNames[monthIndex];
-          const jobs = months[month];
+          // Build month buttons
+          let html = '<div class="grid grid-cols-3 gap-2 mb-4">';
+          monthNames.forEach(m => {
+            html += `<button onclick="showJobs('${m}')" class="btn-slick py-3 px-4 rounded-xl font-medium text-white">${m}</button>`;
+          });
+          html += '</div><button onclick="showMenu()" class="text-zinc-500 text-sm">← Back</button>';
           
-          if (!jobs || jobs.length === 0) {
-            alert('No jobs in ' + month);
-            return;
-          }
+          document.getElementById('menu').classList.add('hidden');
+          document.getElementById('fields').innerHTML = '<h3 class="text-white font-bold mb-3">Select Month</h3>' + html;
+          document.getElementById('confirm').classList.remove('hidden');
+        })
+        .catch(e => alert('Error: ' + e.message));
+    }
+    
+    function showJobs(month) {
+      fetch(API + '/api/jobs')
+        .then(r => r.json())
+        .then(months => {
+          const jobs = months[month] || [];
+          if (jobs.length === 0) return;
           
-          const jobList = jobs.map((j, i) => (i+1) + '. ' + j.owner + ' - ' + j.address).join('\n');
-          const jobChoice = prompt('Select job:\n' + jobList);
-          const jobIndex = parseInt(jobChoice) - 1;
+          let html = '<div class="space-y-2">';
+          jobs.forEach(j => {
+            html += `<button onclick="requestEstimateForJob('${month}', ${j.row})" class="btn-slick w-full py-3 px-4 rounded-xl font-medium text-white text-left">
+              ${j.owner}<br><span class="text-zinc-500 text-sm">${j.address}</span>
+            </button>`;
+          });
+          html += '</div>';
           
-          if (jobIndex < 0 || jobIndex >= jobs.length || isNaN(jobIndex)) return;
-          
-          const job = jobs[jobIndex];
-          
-          // Send request to GroupMe
-          fetch(API + '/api/request-estimate', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ month, row: job.row })
-          }).then(r => r.json()).then(result => {
-            alert(result.success ? '✓ Request sent!' : 'Error: ' + result.error);
+          document.getElementById('fields').innerHTML = '<h3 class="text-white font-bold mb-3">Select Job</h3>' + html + '<button onclick="requestEstimate()" class="text-zinc-500 text-sm mt-3">← Back</button>';
+        });
+    }
+    
+    function requestEstimateForJob(month, row) {
+      fetch(API + '/api/request-estimate', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ month, row })
+      }).then(r => r.json()).then(result => {
+        alert(result.success ? '✓ Request sent!' : 'Error: ' + result.error);
+        showMenu();
+      }).catch(err => alert('Error: ' + err.message));
+    }
           }).catch(err => alert('Error: ' + err.message));
         })
         .catch(e => alert('Error: ' + e.message));
