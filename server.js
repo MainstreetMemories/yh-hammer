@@ -206,8 +206,8 @@ app.post('/api/save-extracted', async (req, res) => {
       shingleColor || '',          // X - Shingle Color
       estimatedSquares || '',      // Y - Estimated Squares
       notes || '',                 // Z - Notes
-      phone || '',                 // AA - (using as contact)
-      email || '',                 // AB - (using as contact)
+      '',                          // AA - (now in Customer Info)
+      '',                          // AB - (now in Customer Info)
       '',                          // AC - (empty)
       '',                          // AD - (empty)
       ''                           // AE - (empty)
