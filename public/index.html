@@ -175,6 +175,24 @@
       setTimeout(() => el.classList.add('hidden'), 7000);
     }
 
+    function showConfirmDialog(data) {
+      console.log('showConfirmDialog called with:', data);
+      let fieldsHtml = ALL_FIELDS.map(f => `
+        <div class="flex items-center gap-2">
+          <label class="text-gray-400 w-32 text-sm">${f.label}:</label>
+          <input type="text" id="edit-${f.key}" value="${data[f.key] || ''}" class="flex-1 bg-gray-800 text-white px-2 py-1 rounded text-sm">
+        </div>
+      `).join('');
+      
+      const container = document.getElementById('confirm-fields');
+      if (container) {
+        container.innerHTML = fieldsHtml;
+      }
+      document.getElementById('confirm-dialog').classList.remove('hidden');
+      document.getElementById('menu').classList.add('hidden');
+      document.getElementById('jobs').classList.add('hidden');
+    }
+
     function showProgress(show, text = 'Processing...') {
       document.getElementById('progress').className = show ? 'mt-6' : 'hidden';
       document.getElementById('progress-text').textContent = text;
