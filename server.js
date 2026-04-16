@@ -224,6 +224,21 @@ app.post('/api/save-extracted', async (req, res) => {
       requestBody: { values: [rowData] }
     });
     
+    // Also save customer info to Customer Information tab
+    // A=Name, B=Address, C=Phone, D=Email
+    try {
+      const custR = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: 'Customer Information!A:D' });
+      const custNextRow = (custR.data.values?.length || 0) + 1;
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `Customer Information!A${custNextRow}:D${custNextRow}`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: { values: [[owner || '', address || '', phone || '', email || '']] }
+      });
+    } catch (e) {
+      console.log('Customer info save error:', e.message);
+    }
+    
     res.json({ success: true, month, owner });
   } catch (err) {
     res.status(500).json({ error: err.message });
