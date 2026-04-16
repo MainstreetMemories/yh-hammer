@@ -69,8 +69,8 @@
         <button onclick="requestEstimate()" class="btn-slick py-4 px-4 rounded-2xl font-medium text-white flex items-center justify-center gap-2">
           <span class="text-lg">📧</span> Request Estimate
         </button>
-        <button onclick="viewJobs()" class="btn-slick py-4 px-4 rounded-2xl font-medium text-white flex items-center justify-center gap-2">
-          <span class="text-lg">📋</span> View Jobs
+        <button onclick="addInstallDate()" class="btn-slick py-4 px-4 rounded-2xl font-medium text-white flex items-center justify-center gap-2">
+          <span class="text-lg">📅</span> Request Install Date
         </button>
       </div>
       
@@ -79,8 +79,8 @@
         <button onclick="addEstimate()" class="btn-slick py-4 px-4 rounded-2xl font-medium text-white flex items-center justify-center gap-2">
           <span class="text-lg">📝</span> Add Estimate
         </button>
-        <button onclick="addInstallDate()" class="btn-slick py-4 px-4 rounded-2xl font-medium text-white flex items-center justify-center gap-2">
-          <span class="text-lg">📅</span> Request Install Date
+        <button onclick="viewJobs()" class="btn-slick py-4 px-4 rounded-2xl font-medium text-white flex items-center justify-center gap-2">
+          <span class="text-lg">📋</span> View Jobs
         </button>
       </div>
     </div>
@@ -294,7 +294,7 @@
           html += '</div><button onclick="showMenu()" class="text-zinc-500 text-sm">← Back</button>';
           
           document.getElementById('menu').classList.add('hidden');
-          document.getElementById('modalTitle').innerText = 'Select Month'; document.getElementById('fields').innerHTML = '<h3 class="text-white font-bold mb-3">Select Month</h3>' + html;
+          document.getElementById('modalTitle').innerText = 'Select Month'; document.getElementById('fields').innerHTML = html;
           document.getElementById('confirm').classList.remove('hidden');
         })
         .catch(e => alert('Error: ' + e.message));
@@ -349,7 +349,7 @@
           html += '</div><button onclick="showMenu()" class="text-zinc-500 text-sm">← Back</button>';
           
           document.getElementById('menu').classList.add('hidden');
-          document.getElementById('modalTitle').innerText = 'Select Month'; document.getElementById('fields').innerHTML = '<h3 class="text-white font-bold mb-3">Select Month</h3>' + html;
+          document.getElementById('modalTitle').innerText = 'Select Month'; document.getElementById('fields').innerHTML = html;
           document.getElementById('confirm').classList.remove('hidden');
         })
         .catch(e => alert('Error: ' + e.message));
