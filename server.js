@@ -338,8 +338,8 @@ app.get('/api/get-job', async (req, res) => {
       depAmtHeld: job[12] || '', amountDue: job[13] || '', pmntMethod: job[14] || '',
       phone: job[15] || '', email: job[16] || '', datePaid: job[17] || '', checkNum: job[18] || '',
       amountPaid: job[19] || '', dripEdgeColor: job[20] || '', ventilationColor: job[21] || '',
-      manufacturer: job[22] || '', shingleType: job[23] || '', shingleColor: job[24] || '',
-      estimatedSquares: job[25] || '', notes: job[26] || ''
+      manufacturer: job[27] || '', shingleType: job[22] || '', shingleColor: job[23] || '',
+      estimatedSquares: job[24] || '', notes: job[25] || '', paid: job[30] || ''
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -381,23 +381,19 @@ app.post('/api/save-confirmed', async (req, res) => {
 // Save estimate
 app.post('/api/save-estimate', async (req, res) => {
   try {
-    const { month, row, estimateDate, squares, primaryContractor, paid } = req.body;
+    const { month, row, estimateDate, manufacturer, paid } = req.body;
     if (!month || !row) return res.status(400).json({ error: 'Missing month or row' });
     
-    const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: month + '!A' + row + ':AE' + row });
+    const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: month + '!A' + row + ':AF' + row });
     const job = r.data.values?.[0] || [];
     
-    job[3] = estimateDate || '';  // D = Estimate Date
-    job[25] = squares || '';      // Z = Estimated Squares
-    // AC = Contractor (col 28), AE = Paid (col 30)
-    // For simplicity, add to notes
-    if (primaryContractor || paid) {
-      job[26] = (job[26] || '') + ' | Contractor: ' + (primaryContractor || '') + ' | Paid: ' + (paid || '');
-    }
+    job[3] = estimateDate || '';      // D = Estimate Date
+    job[27] = manufacturer || '';     // AC = Primary Contractor  
+    job[30] = paid || '';             // AE = Paid
     
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
-      range: month + '!A' + row + ':AE' + row,
+      range: month + '!A' + row + ':AF' + row,
       valueInputOption: 'USER_ENTERED',
       requestBody: { values: [job] }
     });

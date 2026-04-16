@@ -330,7 +330,107 @@
       }).catch(err => alert('Error: ' + err.message));
     }
 
-    function addEstimate() { alert('Add Estimate'); }
+    function addEstimate() {
+      fetch(API + '/api/contractors')
+        .then(r => r.json())
+        .then(contractors => {
+          sessionStorage.setItem('contractors', JSON.stringify(contractors));
+          
+          fetch(API + '/api/jobs')
+            .then(r => r.json())
+            .then(months => {
+              const monthNames = Object.keys(months).filter(m => m !== 'Contractor' && months[m].length > 0);
+              if (monthNames.length === 0) {
+                alert('No jobs found');
+                return;
+              }
+              
+              let html = '<div class="grid grid-cols-3 gap-2 mb-4">';
+              monthNames.forEach(m => {
+                html += `<button onclick="showEstimateJobs('${m}')" class="btn-slick py-3 px-4 rounded-xl font-medium text-white">${m}</button>`;
+              });
+              html += '</div><button onclick="showMenu()" class="text-zinc-500 text-sm">← Back</button>';
+              
+              document.getElementById('menu').classList.add('hidden');
+              document.getElementById('modalTitle').innerText = 'Select Month';
+              document.getElementById('fields').innerHTML = html;
+              document.getElementById('confirm').classList.remove('hidden');
+            });
+        })
+        .catch(e => alert('Error: ' + e.message));
+    }
+    
+    function showEstimateJobs(month) {
+      fetch(API + '/api/jobs')
+        .then(r => r.json())
+        .then(months => {
+          const jobs = months[month] || [];
+          if (jobs.length === 0) return;
+          
+          let html = '<div class="space-y-2">';
+          jobs.forEach(j => {
+            html += `<button onclick="showEstimateForm('${month}', ${j.row})" class="btn-slick w-full py-3 px-4 rounded-xl font-medium text-white text-left">
+              ${j.owner}<br><span class="text-zinc-500 text-sm">${j.address}</span>
+            </button>`;
+          });
+          html += '</div>';
+          
+          document.getElementById('modalTitle').innerText = 'Select Job';
+          document.getElementById('fields').innerHTML = html + '<button onclick="addEstimate()" class="text-zinc-500 text-sm mt-3">← Back</button>';
+        });
+    }
+    
+    function showEstimateForm(month, row) {
+      fetch(API + '/api/get-job?month=' + month + '&row=' + row)
+        .then(r => r.json())
+        .then(job => {
+          const contractors = JSON.parse(sessionStorage.getItem('contractors') || '[]');
+          const contractorOptions = contractors.map(c => 
+            `<option value="${c}" ${job.manufacturer === c ? 'selected' : ''}>${c}</option>`
+          ).join('');
+          
+          document.getElementById('modalTitle').innerText = 'Add Estimate';
+          document.getElementById('fields').innerHTML = 
+            `<div class="space-y-4">
+              <div>
+                <label class="text-zinc-500 text-xs uppercase tracking-wide font-medium">Estimate Date</label>
+                <input id="estimateDate" type="text" value="${job.estimateDate || ''}" class="input-slick w-full p-3 rounded-xl text-white text-sm mt-1" placeholder="MM/DD/YY">
+              </div>
+              <div>
+                <label class="text-zinc-500 text-xs uppercase tracking-wide font-medium">Primary Contractor</label>
+                <select id="contractor" class="input-slick w-full p-3 rounded-xl text-white text-sm mt-1">
+                  <option value="">Select Contractor</option>
+                  ${contractorOptions}
+                </select>
+              </div>
+              <div>
+                <label class="text-zinc-500 text-xs uppercase tracking-wide font-medium">Paid</label>
+                <input id="paid" type="text" value="${job.paid || ''}" class="input-slick w-full p-3 rounded-xl text-white text-sm mt-1" placeholder="">
+              </div>
+              <button onclick="saveEstimate('${month}', ${row})" class="bg-yellow-500 w-full py-3 rounded-xl font-bold text-black">Save</button>
+            </div>
+            <button onclick="addEstimate()" class="text-zinc-500 text-sm mt-3">← Back</button>`;
+        });
+    }
+    
+    function saveEstimate(month, row) {
+      const data = {
+        month,
+        row,
+        estimateDate: document.getElementById('estimateDate').value,
+        manufacturer: document.getElementById('contractor').value,
+        paid: document.getElementById('paid').value
+      };
+      
+      fetch(API + '/api/save-estimate', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+      }).then(r => r.json()).then(result => {
+        alert(result.success ? '✓ Saved!' : 'Error: ' + result.error);
+        showMenu();
+      }).catch(err => alert('Error: ' + err.message));
+    }
     function addInstallDate() {
       fetch(API + '/api/jobs')
         .then(r => r.json())
