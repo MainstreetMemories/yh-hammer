@@ -3,7 +3,6 @@
 <head>
   <title>Yellow Hammer Properties</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  
 </head>
 <body class="bg-neutral-900 text-white p-8">
   <h1 class="text-4xl text-yellow-500 font-bold mb-8">Yellow Hammer Properties</h1>
@@ -15,7 +14,7 @@
     <button onclick="viewJobs()" class="bg-blue-500 text-white font-bold py-4 px-6 rounded">📋 View Jobs</button>
   </div>
 
-  <input type="file" id="fileInput" accept="image/*" onchange="handleFile(this)" class="hidden">
+  <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFile(this)" class="hidden">
 
   <div id="confirm" class="hidden mt-8 p-4 bg-gray-800 rounded">
     <h2 class="text-yellow-500 text-xl font-bold mb-4">Confirm Data</h2>
@@ -40,43 +39,31 @@
       if (!input.files[0]) return;
       
       const file = input.files[0];
-      const fileType = file.type.toLowerCase();
-      
-      // Check if it's an image
-      if (!fileType.startsWith('image/')) {
-        alert('Please upload an image file (jpg, png). For PDFs, please take a screenshot or photo of the contract.');
-        return;
-      }
-      
       alert('Processing: ' + file.name);
       document.getElementById('progress').classList.remove('hidden');
       
-      const reader = new FileReader();
-      reader.onload = async function(e) {
-        const imageData = e.target.result.split(',')[1];
+      // Use FormData to send file
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      fetch(API + '/api/upload-file', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.json())
+      .then(result => {
+        alert(result.success ? 'Success!' : 'Error: ' + result.error);
+        document.getElementById('progress').classList.add('hidden');
         
-        try {
-          const response = await fetch(API + '/api/upload-json', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({file: imageData, isPdf: false, preview: true})
-          });
-          
-          const result = await response.json();
-          alert('API Result: ' + (result.success ? 'Success!' : 'Error: ' + result.error));
-          
-          document.getElementById('progress').classList.add('hidden');
-          
-          if (result.previewData) {
-            data = result.previewData;
-            showConfirm(result.previewData);
-          }
-        } catch(err) {
-          alert('Error: ' + err.message);
-          document.getElementById('progress').classList.add('hidden');
+        if (result.previewData) {
+          data = result.previewData;
+          showConfirm(result.previewData);
         }
-      };
-      reader.readAsDataURL(file);
+      })
+      .catch(err => {
+        alert('Error: ' + err.message);
+        document.getElementById('progress').classList.add('hidden');
+      });
     }
 
     function showConfirm(d) {

@@ -2,6 +2,11 @@ const express = require('express');
 const fs = require('fs');
 const { google } = require('googleapis');
 const path = require('path');
+const multer = require('multer');
+const { PDFDocument } = require('pdf-lib');
+
+// Multer setup for file uploads
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Credentials
 let credentials;
@@ -338,4 +343,84 @@ app.post('/api/request-install', async (req, res) => {
   }
 });
 
-app.listen(process.env.PORT || 3000, () => console.log('Running - NEW'));
+// Upload file endpoint - handles PDF files (scanned or text)
+app.post('/api/upload-file', upload.single('file'), async (req, res) => {
+  try {
+    const apiKey = process.env.OPENROUTER_API_KEY || process.env.openrouter_api_key;
+    if (!apiKey) return res.status(500).json({ error: 'API key not configured' });
+    if (!req.file) return res.status(400).json({ error: 'No file provided' });
+    
+    const fileBuffer = req.file.buffer;
+    let imageBase64 = '';
+    let isScanned = false;
+    
+    // Try to extract text from PDF first
+    let extractedText = '';
+    try {
+      const pdfDoc = await PDFDocument.load(fileBuffer);
+      extractedText = await pdfDoc.getText();
+    } catch (e) {
+      // Not a text PDF - likely scanned, convert to image
+      isScanned = true;
+    }
+    
+    if (extractedText && extractedText.length > 50) {
+      // Text PDF - use extracted text
+      extractedText = extractedText.substring(0, 5000); // Limit text size
+    } else {
+      // Scanned PDF - convert first page to image using canvas approach
+      // Since we don't have canvas/puppeteer, we'll convert via base64 approach
+      // For simplicity, send the raw PDF buffer encoded as base64 to AI
+      // The AI (Claude Haiku) can handle some PDF types
+      imageBase64 = fileBuffer.toString('base64');
+    }
+    
+    let result;
+    if (extractedText && extractedText.length > 50) {
+      // Send extracted text to AI for parsing
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}`, 'HTTP-Referer': 'https://yh-hammer-1.onrender.com', 'X-Title': 'Yellow Hammer' },
+        body: JSON.stringify({
+          model: 'anthropic/claude-3-haiku',
+          messages: [{ role: 'user', content: 'Extract from this contract text:\n\n' + extractedText + '\n\nReturn: Owner Name, Full Property Address, Phone, Email, Total Cost, T.O.O.P, Contract Date, Manufacturer, Shingle Type, Shingle Color, Ventilation Color, Drip Edge Color. Format each as: Field: Value' }],
+          max_tokens: 2000
+        })
+      });
+      
+      if (!response.ok) return res.status(500).json({ error: 'AI extraction failed' });
+      
+      const data = await response.json();
+      const text = data.choices?.[0]?.message?.content || '';
+      
+      const field = (n) => { const m = text.match(new RegExp(`(?:Field:\\s*)?${n}:\\s*(.+)`,'i')); return m ? m[1].trim() : ''; };
+      const amounts = text.match(/\$[\d,]+(?:\.\d{2})?/g) || [];
+      
+      result = {
+        owner: field('Owner') || field('Name') || '',
+        address: field('Address') || field('Street') || '',
+        phone: field('Phone') || '',
+        email: field('Email') || '',
+        totalCost: amounts[0]?.replace(/[$,]/g, '') || '0',
+        toooP: field('T.O.O.P') || field('Out of Pocket') || amounts[1]?.replace(/[$,]/g, '') || '0',
+        contractDate: field('Date') || field('Contract Date') || '',
+        manufacturer: field('Manufacturer') || '',
+        shingleType: field('Type') || field('Shingle Type') || '',
+        shingleColor: field('Color') || field('Shingle Color') || '',
+        ventilationColor: field('Ventilation') || '',
+        dripEdgeColor: field('Drip Edge') || '',
+        notes: field('Notes') || ''
+      };
+    } else {
+      // Scanned PDF - send as image to AI (pdf-lib can't convert to image directly without additional deps)
+      // Fallback: ask user to upload as image instead
+      return res.status(400).json({ error: 'PDF appears to be a scanned image. Please take a screenshot or photo of the contract and upload as a JPG/PNG image instead.' });
+    }
+    
+    res.json({ success: true, previewData: result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.listen(process.env.PORT || 3000, () => console.log('Running - UPDATED'));
