@@ -711,13 +711,13 @@
     }
 
     async function handleFile(event) {
-      console.log('handleFile called');
+      alert('1. handleFile started, file: ' + (event.target.files[0] ? event.target.files[0].name : 'none'));
       const file = event.target.files[0];
-      console.log('File:', file ? file.name : 'none');
-      if (!file) return;
+      if (!file) { alert('No file selected'); return; }
+      alert('2. File selected: ' + file.name);
       
       showProgress(true, 'Reading contract...');
-      console.log('Progress shown');
+      alert('3. Progress shown, calling API...');
       
       try {
         let imageData;
@@ -745,9 +745,12 @@
         const result = await response.json();
 
         if (result.success && result.previewData) {
+          alert('4. Got result from API, showing dialog...');
           showProgress(false);
           pendingData = result.previewData;
+          alert('5. About to call showConfirmDialog');
           showConfirmDialog(result.previewData);
+          alert('6. showConfirmDialog called');
         } else if (result.error) {
           showStatus(result.error || 'Error extracting data', true);
           showProgress(false);
