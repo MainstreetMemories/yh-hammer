@@ -57,7 +57,7 @@ app.post('/api/upload-json', async (req, res) => {
     // Split pages and build content array
     const pages = isPdf ? file.split('||PAGE||') : [file];
     const content = [
-      { type: 'text', text: 'Extract from these contract pages: TOTAL COST, TOTAL OUT OF POCKET, Owner Name, Property Address (street,city,state,zip), Phone, Email, Contract Date, Manufacturer, Shingle Type, Shingle Color, Ventilation Color, Drip Edge Color, ROOFING WORK TO BE PERFORMED, EXTERIOR/INTERIOR WORK TO BE PERFORMED. COMBINE WORK INTO NOTES, PRINTED NAME (salesperson name): Take the "ROOFING WORK TO BE PERFORMED" and "EXTERIOR/INTERIOR WORK TO BE PERFORMED" sections and combine them into a single notes field. IMPORTANT: For money amounts, return as "TOTAL COST: 12069.14" with no $ sign. Format: Field: Value' }
+      { type: 'text', text: 'Extract from these contract pages: TOTAL COST, TOTAL OUT OF POCKET, Owner Name, Property Address (street,city,state,zip), Phone, Email, Contract Date, Manufacturer, Shingle Type, Shingle Color, Ventilation Color, Drip Edge Color, ROOFING WORK TO BE PERFORMED, EXTERIOR/INTERIOR WORK TO BE PERFORMED, Printed Name (the YHP representative name). COMBINE WORK INTO NOTES: Take the "ROOFING WORK TO BE PERFORMED" and "EXTERIOR/INTERIOR WORK TO BE PERFORMED" sections and combine them into a single notes field. IMPORTANT: For money amounts, return as "TOTAL COST: 12069.14" with no $ sign. Return fields as "Field: Value" format including "Printed Name: Dylan Leon".' }
     ];
     
     // Add each page as an image
