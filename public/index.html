@@ -476,6 +476,10 @@
     
     function selectInstallJob(month, row, owner) {
       const date = prompt('Enter proposed install date for ' + owner + ' (or leave blank):');
+      if (date === null) {
+        showMenu(); // User cancelled
+        return;
+      }
       fetch(API + '/api/request-install', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
