@@ -122,6 +122,15 @@
   </div>
 
   <script>
+    // Global error handler
+    window.onerror = function(msg, url, line, col, error) {
+      console.error('JS Error:', msg, 'line:', line, 'col:', col);
+      alert('Error: ' + msg + ' (line ' + line + ')');
+      return false;
+    };
+    
+    console.log('Script loaded, API:', window.location.origin);
+    
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     const API = window.location.origin;
     let pendingData = null;
@@ -172,6 +181,10 @@
     }
 
     function showMenu() {
+      console.log('showMenu called');
+      console.log('menu element:', document.getElementById('menu'));
+      console.log('jobs element:', document.getElementById('jobs'));
+      console.log('confirm-dialog:', document.getElementById('confirm-dialog'));
       document.getElementById('menu').classList.remove('hidden');
       document.getElementById('jobs').classList.add('hidden');
       document.getElementById('confirm-dialog').classList.add('hidden');
@@ -680,10 +693,13 @@
     }
 
     async function handleFile(event) {
+      console.log('handleFile called');
       const file = event.target.files[0];
+      console.log('File:', file ? file.name : 'none');
       if (!file) return;
       
       showProgress(true, 'Reading contract...');
+      console.log('Progress shown');
       
       try {
         let imageData;
