@@ -204,7 +204,7 @@
         'totalBalanceDue','toooP','depAmtHeld','amountDue','pmntMethod',
         'datePaid','checkNumber','amountPaid','dripEdgeColor','ventilationColor',
         'manufacturer','shingleType','shingleColor','estimatedSquares','notes',
-        'phone','email'
+        'phone','email','salesperson'
       ];
       
       const labels = {
@@ -216,7 +216,7 @@
         datePaid:'Date Paid', checkNumber:'Check #', amountPaid:'Paid',
         dripEdgeColor:'Drip Edge', ventilationColor:'Ventilation', manufacturer:'Manufacturer',
         shingleType:'Shingle Type', shingleColor:'Color', estimatedSquares:'Squares',
-        notes:'Notes', phone:'Phone', email:'Email'
+        notes:'Notes', phone:'Phone', email:'Email', salesperson:'Salesperson'
       };
       
       let html = '<div class="grid grid-cols-2 gap-3">';
@@ -253,7 +253,7 @@
         'totalBalanceDue','toooP','depAmtHeld','amountDue','pmntMethod',
         'datePaid','checkNumber','amountPaid','dripEdgeColor','ventilationColor',
         'manufacturer','shingleType','shingleColor','estimatedSquares','notes',
-        'phone','email'
+        'phone','email','salesperson'
       ];
       fields.forEach(f => data[f] = document.getElementById(f)?.value || '');
       

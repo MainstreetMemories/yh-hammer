@@ -85,6 +85,7 @@ app.post('/api/upload-json', async (req, res) => {
     
     const extracted = {
       owner: field('Owner') || field('Name') || '',
+      salesperson: field('Printed Name') || field('Salesperson') || '',
       address: field('Address') || field('Street') || '',
       phone: field('Phone') || '',
       email: field('Email') || '',
@@ -145,6 +146,7 @@ app.post('/api/extract-data', async (req, res) => {
     
     const extracted = {
       owner: field('Owner') || field('Name') || '',
+      salesperson: field('Printed Name') || field('Salesperson') || '',
       address: field('Address') || field('Street') || '',
       phone: field('Phone') || '',
       email: field('Email') || '',
@@ -174,7 +176,7 @@ app.post('/api/save-extracted', async (req, res) => {
       totalBalanceDue, toooP, depAmtHeld, amountDue, pmntMethod,
       datePaid, checkNumber, amountPaid, dripEdgeColor, ventilationColor,
       manufacturer, shingleType, shingleColor, estimatedSquares, notes,
-      phone, email
+      phone, email, salesperson
     } = req.body;
     
     if (!month || !owner) return res.status(400).json({ error: 'Missing month or owner' });
@@ -206,11 +208,12 @@ app.post('/api/save-extracted', async (req, res) => {
       shingleColor || '',          // X - Shingle Color
       estimatedSquares || '',      // Y - Estimated Squares
       notes || '',                 // Z - Notes
-      '',                          // AA - (now in Customer Info)
+      salesperson || '',          // AA - Salesperson
       '',                          // AB - (now in Customer Info)
-      '',                          // AC - (empty)
+      '',                          // AC - (now in Customer Info)
       '',                          // AD - (empty)
-      ''                           // AE - (empty)
+      '',                          // AE - (empty)
+      ''                           // AF - (empty)
     ];
     
     const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A:AE` });
@@ -219,7 +222,7 @@ app.post('/api/save-extracted', async (req, res) => {
     
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${month}!A${nextRow}:AE${nextRow}`,
+      range: `${month}!A${nextRow}:AF${nextRow}`,
       valueInputOption: 'USER_ENTERED',
       requestBody: { values: [rowData] }
     });
@@ -321,7 +324,7 @@ app.post('/api/save-confirmed', async (req, res) => {
       data.depAmtHeld || '', data.amountDue || '', data.pmntMethod || '', data.phone || '', data.email || '',
       data.datePaid || '', data.checkNum || '', data.amountPaid || '', data.dripEdgeColor || '',
       data.ventilationColor || '', data.manufacturer || '', data.shingleType || '', data.shingleColor || '',
-      data.estimatedSquares || '', data.notes || ''
+      data.estimatedSquares || '', data.notes || '', data.salesperson || ''
     ];
     
     let targetRow = row || ((await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: month + '!A:AE' })).data.values?.length || 0) + 1;
@@ -461,6 +464,7 @@ app.post('/api/upload-file', upload.single('file'), async (req, res) => {
     
     const result = {
       owner: field('Owner') || field('Name') || '',
+      salesperson: field('Printed Name') || field('Salesperson') || '',
       address: field('Address') || field('Street') || '',
       phone: field('Phone') || '',
       email: field('Email') || '',
