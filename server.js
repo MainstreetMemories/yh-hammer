@@ -57,7 +57,7 @@ app.post('/api/upload-json', async (req, res) => {
     // Split pages and build content array
     const pages = isPdf ? file.split('||PAGE||') : [file];
     const content = [
-      { type: 'text', text: 'Extract from these contract pages: Owner Name, Full Property Address (street,city,state,zip), Phone Number, Email, Total Contract Amount, T.O.O.P (total out of pocket), Contract Date, Manufacturer, Shingle Type, Shingle Color, Ventilation Color, Drip Edge Color. Format each as: Field: Value' }
+      { type: 'text', text: 'Extract from these contract pages: TOTAL COST, TOTAL OUT OF POCKET, Owner Name, Property Address (street,city,state,zip), Phone, Email, Contract Date, Manufacturer, Shingle Type, Shingle Color, Ventilation Color, Drip Edge Color. IMPORTANT: For money amounts, return as "TOTAL COST: 12069.14" or "Total: 12069.14" with no $ sign. Format: Field: Value' }
     ];
     
     // Add each page as an image
@@ -88,7 +88,7 @@ app.post('/api/upload-json', async (req, res) => {
       address: field('Address') || field('Street') || '',
       phone: field('Phone') || '',
       email: field('Email') || '',
-      totalCost: field('Total') || field('Total Cost') || amounts[0]?.replace(/[$,]/g, '') || '0',
+      totalCost: field('TOTAL COST') || field('Total Cost') || field('Total') || field('Total Contract') || amounts[0]?.replace(/[$,]/g, '') || '0',
       toooP: field('T.O.O.P') || field('Out of Pocket') || amounts[1]?.replace(/[$,]/g, '') || '0',
       contractDate: field('Date') || field('Contract Date') || '',
       manufacturer: field('Manufacturer') || '',
@@ -148,7 +148,7 @@ app.post('/api/extract-data', async (req, res) => {
       address: field('Address') || field('Street') || '',
       phone: field('Phone') || '',
       email: field('Email') || '',
-      totalCost: field('Total') || field('Total Cost') || amounts[0]?.replace(/[$,]/g, '') || '0',
+      totalCost: field('TOTAL COST') || field('Total Cost') || field('Total') || field('Total Contract') || amounts[0]?.replace(/[$,]/g, '') || '0',
       toooP: field('T.O.O.P') || field('Out of Pocket') || amounts[1]?.replace(/[$,]/g, '') || '0',
       contractDate: field('Date') || field('Contract Date') || '',
       manufacturer: field('Manufacturer') || '',
@@ -436,7 +436,7 @@ app.post('/api/upload-file', upload.single('file'), async (req, res) => {
       address: field('Address') || field('Street') || '',
       phone: field('Phone') || '',
       email: field('Email') || '',
-      totalCost: field('Total') || field('Total Cost') || amounts[0]?.replace(/[$,]/g, '') || '0',
+      totalCost: field('TOTAL COST') || field('Total Cost') || field('Total') || field('Total Contract') || amounts[0]?.replace(/[$,]/g, '') || '0',
       toooP: field('T.O.O.P') || field('Out of Pocket') || amounts[1]?.replace(/[$,]/g, '') || '0',
       contractDate: field('Date') || field('Contract Date') || '',
       manufacturer: field('Manufacturer') || '',

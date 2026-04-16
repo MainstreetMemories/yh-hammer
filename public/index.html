@@ -125,6 +125,10 @@
       const file = input.files[0];
       document.getElementById('menu').classList.add('hidden');
       document.getElementById('progress').classList.remove('hidden');
+      document.getElementById('confirm').classList.add('hidden');
+      
+      // Reset for next upload
+      input.value = '';
       
       try {
         let imageBase64;
