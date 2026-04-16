@@ -208,12 +208,13 @@ app.post('/api/save-extracted', async (req, res) => {
       shingleColor || '',          // X - Shingle Color
       estimatedSquares || '',      // Y - Estimated Squares
       notes || '',                 // Z - Notes
-      salesperson || '',          // AA - Salesperson
-      '',                          // AB - (now in Customer Info)
-      '',                          // AC - (now in Customer Info)
+      '',                          // AA - (empty)
+      '',                          // AB - (empty)
+      '',                          // AC - (empty)
       '',                          // AD - (empty)
       '',                          // AE - (empty)
-      ''                           // AF - (empty)
+      '',                          // AF - (empty)
+      salesperson || ''            // AG - Salesperson
     ];
     
     const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A:AE` });
@@ -222,7 +223,7 @@ app.post('/api/save-extracted', async (req, res) => {
     
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${month}!A${nextRow}:AF${nextRow}`,
+      range: `${month}!A${nextRow}:AG${nextRow}`,
       valueInputOption: 'USER_ENTERED',
       requestBody: { values: [rowData] }
     });
