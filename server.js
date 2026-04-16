@@ -75,7 +75,7 @@ app.post('/api/upload-json', async (req, res) => {
       })
     });
     
-    if (!response.ok) return res.status(500).json({ error: 'AI extraction failed' });
+    if (!response.ok) { const errText = await response.text(); console.log("AI Error:", response.status, errText); return res.status(500).json({ error: "AI extraction failed: " + response.status }); }
     
     const data = await response.json();
     const text = data.choices?.[0]?.message?.content || '';
@@ -135,7 +135,7 @@ app.post('/api/extract-data', async (req, res) => {
       })
     });
     
-    if (!response.ok) return res.status(500).json({ error: 'AI extraction failed' });
+    if (!response.ok) { const errText = await response.text(); console.log("AI Error:", response.status, errText); return res.status(500).json({ error: "AI extraction failed: " + response.status }); }
     
     const data = await response.json();
     const text = data.choices?.[0]?.message?.content || '';
