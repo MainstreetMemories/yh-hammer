@@ -95,7 +95,7 @@ app.post('/api/upload-json', async (req, res) => {
       shingleType: field('Type') || field('Shingle Type') || '',
       shingleColor: field('Color') || field('Shingle Color') || '',
       ventilationColor: field('Ventilation') || '',
-      dripEdgeColor: field('Drip Edge') || '',
+      dripEdgeColor: field('Drip Edge') || field('Drip Edge Color') || '',
       notes: (field('ROOFING WORK TO BE PERFORMED') ? field('ROOFING WORK TO BE PERFORMED') + ' ' : '') + (field('EXTERIOR/INTERIOR WORK TO BE PERFORMED') || field('Notes') || '')
     };
     
@@ -155,7 +155,7 @@ app.post('/api/extract-data', async (req, res) => {
       shingleType: field('Type') || field('Shingle Type') || '',
       shingleColor: field('Color') || field('Shingle Color') || '',
       ventilationColor: field('Ventilation') || '',
-      dripEdgeColor: field('Drip Edge') || '',
+      dripEdgeColor: field('Drip Edge') || field('Drip Edge Color') || '',
       notes: (field('ROOFING WORK TO BE PERFORMED') ? field('ROOFING WORK TO BE PERFORMED') + ' ' : '') + (field('EXTERIOR/INTERIOR WORK TO BE PERFORMED') || field('Notes') || '') || field('Notes') || ''
     };
     
@@ -458,7 +458,7 @@ app.post('/api/upload-file', upload.single('file'), async (req, res) => {
       shingleType: field('Type') || field('Shingle Type') || '',
       shingleColor: field('Color') || field('Shingle Color') || '',
       ventilationColor: field('Ventilation') || '',
-      dripEdgeColor: field('Drip Edge') || '',
+      dripEdgeColor: field('Drip Edge') || field('Drip Edge Color') || '',
       notes: (field('ROOFING WORK TO BE PERFORMED') ? field('ROOFING WORK TO BE PERFORMED') + ' ' : '') + (field('EXTERIOR/INTERIOR WORK TO BE PERFORMED') || field('Notes') || '') || field('Notes') || ''
     };
     
