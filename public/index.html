@@ -273,7 +273,46 @@
       document.getElementById('progress').classList.add('hidden');
     }
 
-    function requestEstimate() { alert('Request Estimate'); }
+    function requestEstimate() {
+      fetch(API + '/api/jobs')
+        .then(r => r.json())
+        .then(months => {
+          const monthNames = Object.keys(months);
+          if (monthNames.length === 0) {
+            alert('No jobs found');
+            return;
+          }
+          const choice = prompt('Select month:\n' + monthNames.map((m,i) => (i+1) + '. ' + m).join('\n'));
+          const monthIndex = parseInt(choice) - 1;
+          if (monthIndex < 0 || monthIndex >= monthNames.length || isNaN(monthIndex)) return;
+          
+          const month = monthNames[monthIndex];
+          const jobs = months[month];
+          
+          if (!jobs || jobs.length === 0) {
+            alert('No jobs in ' + month);
+            return;
+          }
+          
+          const jobList = jobs.map((j, i) => (i+1) + '. ' + j.owner + ' - ' + j.address).join('\n');
+          const jobChoice = prompt('Select job:\n' + jobList);
+          const jobIndex = parseInt(jobChoice) - 1;
+          
+          if (jobIndex < 0 || jobIndex >= jobs.length || isNaN(jobIndex)) return;
+          
+          const job = jobs[jobIndex];
+          
+          // Send request to GroupMe
+          fetch(API + '/api/request-estimate', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ month, row: job.row })
+          }).then(r => r.json()).then(result => {
+            alert(result.success ? '✓ Request sent!' : 'Error: ' + result.error);
+          }).catch(err => alert('Error: ' + err.message));
+        })
+        .catch(e => alert('Error: ' + e.message));
+    }
     function addEstimate() { alert('Add Estimate'); }
     function addInstallDate() { alert('Add Install Date'); }
     function viewJobs() { 

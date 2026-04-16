@@ -251,16 +251,29 @@ app.post('/api/request-estimate', async (req, res) => {
     const { month, row } = req.body;
     if (!month || !row) return res.status(400).json({ error: 'Missing month or row' });
     
-    const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: month + '!A' + row + ':F' + row });
+    // Get columns A (0), F (5), V (21), W (22), X (23), Z (25)
+    const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: month + '!A' + row + ':Z' + row });
     const job = r.data.values?.[0] || [];
     const owner = job[5] || 'Unknown';
     const address = job[0] || '';
+    const manufacturer = job[21] || '';
+    const shingleType = job[22] || '';
+    const shingleColor = job[23] || '';
+    const notes = job[25] || '';
     
     const botId = process.env.GROUPME_BOT_ID || 'a36a8a2e2fc7ad27ece3f21843';
+    const message = 'ESTIMATE NEEDED\n' +
+      'Owner: ' + owner + '\n' +
+      'Address: ' + address + '\n' +
+      'Manufacturer: ' + manufacturer + '\n' +
+      'Shingle Type: ' + shingleType + '\n' +
+      'Shingle Color: ' + shingleColor + '\n' +
+      'Notes: ' + notes;
+    
     await fetch('https://api.groupme.com/v3/bots/post', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bot_id: botId, text: 'ESTIMATE NEEDED\n' + owner + '\n' + address })
+      body: JSON.stringify({ bot_id: botId, text: message })
     });
     
     res.json({ success: true });
