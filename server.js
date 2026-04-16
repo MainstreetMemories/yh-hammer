@@ -85,7 +85,7 @@ app.post('/api/upload-json', async (req, res) => {
     
     const extracted = {
       owner: field('Owner') || field('Name') || '',
-      salesperson: field('Printed Name') || field('Salesperson') || field('Printed') || field('Name') || '',
+      salesperson: field('Printed Name') || field('YHP Representative') || field('Salesperson') || '',
       address: field('Address') || field('Street') || '',
       phone: field('Phone') || '',
       email: field('Email') || '',
@@ -146,7 +146,7 @@ app.post('/api/extract-data', async (req, res) => {
     
     const extracted = {
       owner: field('Owner') || field('Name') || '',
-      salesperson: field('Printed Name') || field('Salesperson') || field('Printed') || field('Name') || '',
+      salesperson: field('Printed Name') || field('YHP Representative') || field('Salesperson') || '',
       address: field('Address') || field('Street') || '',
       phone: field('Phone') || '',
       email: field('Email') || '',
@@ -465,7 +465,7 @@ app.post('/api/upload-file', upload.single('file'), async (req, res) => {
     
     const result = {
       owner: field('Owner') || field('Name') || '',
-      salesperson: field('Printed Name') || field('Salesperson') || field('Printed') || field('Name') || '',
+      salesperson: field('Printed Name') || field('YHP Representative') || field('Salesperson') || '',
       address: field('Address') || field('Street') || '',
       phone: field('Phone') || '',
       email: field('Email') || '',
