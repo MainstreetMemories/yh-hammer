@@ -633,40 +633,16 @@
     async function confirmSave() {
       if (!pendingData) return;
       
-      // Update pendingData with edited values from input fields
-      pendingData.owner = document.getElementById('edit-owner').value;
-      // Gather all fields for editing
-    // Collect all editable fields
-    ALL_FIELDS.forEach(f => {
-      const el = document.getElementById('edit-' + f.key);
-      if (el) pendingData[f.key] = el.value;
-    });
-    pendingData.certOfComp = document.getElementById('edit-certOfComp').value;
-    pendingData.contractDate = document.getElementById('edit-contractDate').value;
-    pendingData.estimateDate = document.getElementById('edit-estimateDate').value;
-    pendingData.installDate = document.getElementById('edit-installDate').value;
-      pendingData.phone = document.getElementById('edit-phone').value;
-      pendingData.email = document.getElementById('edit-email').value;
+      // Update pendingData with ALL edited values
+      ALL_FIELDS.forEach(f => {
+        const el = document.getElementById('edit-' + f.key);
+        if (el) pendingData[f.key] = el.value;
+      });
       
-    pendingData.requiredDownPayment = document.getElementById('edit-requiredDownPayment').value;
-    pendingData.financeAmount = document.getElementById('edit-financeAmount').value;
-    pendingData.additionalExpense = document.getElementById('edit-additionalExpense').value;
-    pendingData.totalBalanceDue = document.getElementById('edit-totalBalanceDue').value;
-    pendingData.depAmtHeld = document.getElementById('edit-depAmtHeld').value;
-    pendingData.amountDue = document.getElementById('edit-amountDue').value;
-    pendingData.pmntMethod = document.getElementById('edit-pmntMethod').value;
-      
-    pendingData.datePaid = document.getElementById('edit-datePaid').value;
-    pendingData.checkNum = document.getElementById('edit-checkNum').value;
-    pendingData.amountPaid = document.getElementById('edit-amountPaid').value;
-    pendingData.dripEdgeColor = document.getElementById('edit-dripEdgeColor').value;
-      pendingData.needsEstimate = document.getElementById('edit-needsEstimate').checked;
-      pendingData.date = document.getElementById('edit-date').value;
-      pendingData.ventilationColor = document.getElementById('edit-ventilationColor').value;
-      pendingData.manufacturer = document.getElementById('edit-manufacturer').value;
-      pendingData.shingleType = document.getElementById('edit-shingleType').value;
-      pendingData.shingleColor = document.getElementById('edit-shingleColor').value;
-      pendingData.notes = document.getElementById('edit-notes').value;
+      // Get month from dropdown or use current
+      const monthSelect = document.getElementById('edit-month');
+      if (monthSelect) pendingData.month = monthSelect.value;
+      else pendingData.month = pendingData.month || 'April';
       
       // Recalculate month based on edited date
       const dateValue = pendingData.date.toLowerCase();
