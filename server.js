@@ -358,7 +358,7 @@ app.post('/api/upload-file', upload.single('file'), async (req, res) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}`, 'HTTP-Referer': 'https://yh-hammer-1.onrender.com', 'X-Title': 'Yellow Hammer' },
       body: JSON.stringify({
-        model: 'anthropic/claude-3-haiku',
+        model: 'anthropic/claude-3-haiku-20240307',
         messages: [{ role: 'user', content: [
           { type: 'text', text: 'Extract from this contract: Owner Name, Full Property Address (street,city,state,zip), Phone Number, Email, Total Contract Amount, T.O.O.P (total out of pocket), Contract Date, Manufacturer, Shingle Type, Shingle Color, Ventilation Color, Drip Edge Color. Format each as: Field: Value' },
           { type: 'image_url', image_url: { url: `data:application/pdf;base64,${pdfBase64}` } }
