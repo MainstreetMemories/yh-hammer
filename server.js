@@ -338,4 +338,4 @@ app.post('/api/request-install', async (req, res) => {
   }
 });
 
-app.listen(process.env.PORT || 3000, () => console.log('Running'));
+app.listen(process.env.PORT || 3000, () => console.log('Running - NEW'));
