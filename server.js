@@ -207,7 +207,8 @@ app.post('/api/save-extracted', async (req, res) => {
     ];
     
     const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A:AE` });
-    const nextRow = (r.data.values?.length || 0) + 4;
+    // Data starts at row 2 (row 1 is header)
+    const nextRow = (r.data.values?.length || 0) + 1;
     
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
