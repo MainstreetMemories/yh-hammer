@@ -173,9 +173,37 @@ app.post('/api/save-extracted', async (req, res) => {
     if (!month || !owner) return res.status(400).json({ error: 'Missing month or owner' });
     
     const rowData = [
-      address || '', '', contractDate || '', '', '', owner || '', totalCost || '', '0', '0', '0', totalCost || '', toooP || '', '0', '0', '',
-      '', phone || '', email || '', '', dripEdgeColor || '', ventilationColor || '', manufacturer || '', shingleType || '', shingleColor || '', '', notes || '',
-      '', '', '', '', '', ''
+      address || '',           // A - Address
+      '',                     // B - Cert Of Comp
+      contractDate || '',     // C - Contract Date
+      '',                     // D - Estimate Date
+      '',                     // E - Install Date
+      owner || '',            // F - Owner
+      totalCost || '',        // G - Total Cost
+      '',                     // H - Required Down Payment
+      '',                     // I - Finance Amount
+      '',                     // J - Additional Expense
+      totalCost || '',        // K - Total Balance Due
+      toooP || '',            // L - T.O.O.P
+      '',                     // M - DEP Amt Held
+      '',                     // N - Amount Due
+      '',                     // O - Pmnt Method
+      '',                     // P - (empty)
+      '',                     // Q - Date Paid
+      '',                     // R - Check #
+      '',                     // S - Amount Paid
+      dripEdgeColor || '',    // T - Drip Edge Color
+      ventilationColor || '',// U - Ventilation Color
+      manufacturer || '',     // V - Manufacturer
+      shingleType || '',      // W - Shingle Type
+      shingleColor || '',     // X - Shingle Color
+      '',                     // Y - Estimated Squares
+      notes || '',            // Z - Notes
+      '',                     // AA - (empty)
+      '',                     // AB - (empty)
+      '',                     // AC - (empty)
+      '',                     // AD - (empty)
+      ''                      // AE - (empty)
     ];
     
     const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A:AE` });
