@@ -54,16 +54,24 @@ app.post('/api/upload-json', async (req, res) => {
     const { file, isPdf, preview } = req.body;
     if (!file) return res.status(400).json({ error: 'No file provided' });
     
+    // Split pages and build content array
+    const pages = isPdf ? file.split('||PAGE||') : [file];
+    const content = [
+      { type: 'text', text: 'Extract from these contract pages: Owner Name, Full Property Address (street,city,state,zip), Phone Number, Email, Total Contract Amount, T.O.O.P (total out of pocket), Contract Date, Manufacturer, Shingle Type, Shingle Color, Ventilation Color, Drip Edge Color. Format each as: Field: Value' }
+    ];
+    
+    // Add each page as an image
+    for (const page of pages) {
+      content.push({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${page}` } });
+    }
+    
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}`, 'HTTP-Referer': 'https://yh-hammer.onrender.com', 'X-Title': 'Yellow Hammer' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}`, 'HTTP-Referer': 'https://yh-hammer-1.onrender.com', 'X-Title': 'Yellow Hammer' },
       body: JSON.stringify({
         model: 'anthropic/claude-3-haiku',
-        messages: [{ role: 'user', content: [
-          { type: 'text', text: 'Extract from this contract: Owner Name, Full Property Address (street,city,state,zip), Phone Number, Email, Total Contract Amount, T.O.O.P (total out of pocket), Contract Date, Manufacturer, Shingle Type, Shingle Color, Ventilation Color, Drip Edge Color. Format each as: Field: Value' },
-          { type: 'image_url', image_url: { url: isPdf ? `data:image/jpeg;base64,${file.split('||PAGE||')[0]}` : `data:image/jpeg;base64,${file}` } }
-        ]}],
-        max_tokens: 2000
+        messages: [{ role: 'user', content: content }],
+        max_tokens: 2500
       })
     });
     
@@ -106,16 +114,24 @@ app.post('/api/extract-data', async (req, res) => {
     const { file, isPdf } = req.body;
     if (!file) return res.status(400).json({ error: 'No file provided' });
     
+    // Split pages and build content array
+    const pages = isPdf ? file.split('||PAGE||') : [file];
+    const content = [
+      { type: 'text', text: 'Extract: Owner, Address (street city state zip), Phone, Email, Total Cost, T.O.O.P, Contract Date, Manufacturer, Shingle Type, Shingle Color, Ventilation Color, Drip Edge Color, Notes. Format: Field: Value' }
+    ];
+    
+    // Add each page as an image
+    for (const page of pages) {
+      content.push({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${page}` } });
+    }
+    
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}`, 'HTTP-Referer': 'https://yh-hammer.onrender.com', 'X-Title': 'Yellow Hammer' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}`, 'HTTP-Referer': 'https://yh-hammer-1.onrender.com', 'X-Title': 'Yellow Hammer' },
       body: JSON.stringify({
         model: 'anthropic/claude-3-haiku',
-        messages: [{ role: 'user', content: [
-          { type: 'text', text: 'Extract: Owner, Address (street city state zip), Phone, Email, Total Cost, T.O.O.P, Contract Date, Manufacturer, Shingle Type, Shingle Color, Ventilation Color, Drip Edge Color, Notes. Format: Field: Value' },
-          { type: 'image_url', image_url: { url: isPdf ? `data:image/jpeg;base64,${file.split('||PAGE||')[0]}` : `data:image/jpeg;base64,${file}` } }
-        ]}],
-        max_tokens: 1500
+        messages: [{ role: 'user', content: content }],
+        max_tokens: 2500
       })
     });
     

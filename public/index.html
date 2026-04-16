@@ -3,6 +3,8 @@
 <head>
   <title>Yellow Hammer Properties</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
 </head>
 <body class="bg-neutral-900 text-white p-8">
   <h1 class="text-4xl text-yellow-500 font-bold mb-8">Yellow Hammer Properties</h1>
@@ -35,23 +37,34 @@
       document.getElementById('fileInput').click(); 
     }
     
-    function handleFile(input) {
+    async function handleFile(input) {
       if (!input.files[0]) return;
       
       const file = input.files[0];
       alert('Processing: ' + file.name);
       document.getElementById('progress').classList.remove('hidden');
       
-      // Use FormData to send file
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      fetch(API + '/api/upload-file', {
-        method: 'POST',
-        body: formData
-      })
-      .then(response => response.json())
-      .then(result => {
+      try {
+        let imageBase64;
+        
+        // Check file type
+        if (file.type === 'application/pdf') {
+          // Convert PDF to images (both pages)
+          const images = await convertPdfToImages(file);
+          imageBase64 = images.join('||PAGE||');
+        } else {
+          // It's already an image
+          imageBase64 = await fileToBase64(file);
+        }
+        
+        // Send to server
+        const response = await fetch(API + '/api/upload-json', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({file: imageBase64, isPdf: true, preview: true})
+        });
+        
+        const result = await response.json();
         alert(result.success ? 'Success!' : 'Error: ' + result.error);
         document.getElementById('progress').classList.add('hidden');
         
@@ -59,10 +72,45 @@
           data = result.previewData;
           showConfirm(result.previewData);
         }
-      })
-      .catch(err => {
+      } catch (err) {
         alert('Error: ' + err.message);
         document.getElementById('progress').classList.add('hidden');
+      }
+    }
+    
+    // Convert PDF file to array of base64 images (both pages)
+    async function convertPdfToImages(file) {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const images = [];
+      
+      // Convert each page to image
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const viewport = page.getViewport({ scale: 2 }); // Higher scale = better quality
+        
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        
+        await page.render({ canvasContext: context, viewport: viewport }).promise;
+        
+        // Convert to base64
+        const imageData = canvas.toDataURL('image/jpeg').split(',')[1];
+        images.push(imageData);
+      }
+      
+      return images;
+    }
+    
+    // Convert file to base64
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
       });
     }
 
