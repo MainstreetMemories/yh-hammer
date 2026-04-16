@@ -192,21 +192,52 @@
 
     function showConfirm(d) {
       document.getElementById('menu').classList.add('hidden');
-      const fields = ['owner','address','phone','email','totalCost','toooP'];
-      const labels = {'owner':'Owner','address':'Address','phone':'Phone','email':'Email','totalCost':'Total Cost','toooP':'T.O.O.P'};
-      let html = fields.map(f => 
-        `<div>
+      
+      // All columns A-Z
+      const fields = [
+        'address','certOfComp','contractDate','estimateDate','installDate','owner',
+        'totalCost','requiredDownPayment','financeAmount','additionalExpense',
+        'totalBalanceDue','toooP','depAmtHeld','amountDue','pmntMethod',
+        'datePaid','checkNumber','amountPaid','dripEdgeColor','ventilationColor',
+        'manufacturer','shingleType','shingleColor','estimatedSquares','notes',
+        'phone','email'
+      ];
+      
+      const labels = {
+        address:'Address', certOfComp:'Cert Of Comp', contractDate:'Contract Date',
+        estimateDate:'Estimate Date', installDate:'Install Date', owner:'Owner',
+        totalCost:'Total Cost', requiredDownPayment:'Down Payment', financeAmount:'Finance',
+        additionalExpense:'Additional', totalBalanceDue:'Balance Due', toooP:'T.O.O.P',
+        depAmtHeld:'DEP Held', amountDue:'Amount Due', pmntMethod:'Payment Method',
+        datePaid:'Date Paid', checkNumber:'Check #', amountPaid:'Paid',
+        dripEdgeColor:'Drip Edge', ventilationColor:'Ventilation', manufacturer:'Manufacturer',
+        shingleType:'Shingle Type', shingleColor:'Color', estimatedSquares:'Squares',
+        notes:'Notes', phone:'Phone', email:'Email'
+      };
+      
+      let html = '<div class="grid grid-cols-2 gap-3">';
+      fields.forEach(f => {
+        html += `<div>
           <label class="text-zinc-500 text-xs uppercase tracking-wide font-medium">${labels[f]}</label>
-          <input id="${f}" value="${(d[f]||'')}" class="input-slick w-full p-3.5 rounded-xl text-white text-sm mt-1">
-        </div>`
-      ).join('');
+          <input id="${f}" value="${(d[f]||'')}" class="input-slick w-full p-3 rounded-xl text-white text-sm mt-1">
+        </div>`;
+      });
+      html += '</div>';
+      
       document.getElementById('fields').innerHTML = html;
       document.getElementById('confirm').classList.remove('hidden');
     }
 
     function saveData() {
-      const fields = ['owner','address','phone','email','totalCost','toooP'];
-      fields.forEach(f => data[f] = document.getElementById(f).value);
+      const fields = [
+        'address','certOfComp','contractDate','estimateDate','installDate','owner',
+        'totalCost','requiredDownPayment','financeAmount','additionalExpense',
+        'totalBalanceDue','toooP','depAmtHeld','amountDue','pmntMethod',
+        'datePaid','checkNumber','amountPaid','dripEdgeColor','ventilationColor',
+        'manufacturer','shingleType','shingleColor','estimatedSquares','notes',
+        'phone','email'
+      ];
+      fields.forEach(f => data[f] = document.getElementById(f)?.value || '');
       data.month = 'April';
       
       fetch(API + '/api/save-extracted', {

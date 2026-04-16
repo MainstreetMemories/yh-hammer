@@ -168,42 +168,49 @@ app.post('/api/extract-data', async (req, res) => {
 // Save extracted data
 app.post('/api/save-extracted', async (req, res) => {
   try {
-    const { month, owner, address, phone, email, totalCost, toooP, contractDate, manufacturer, shingleType, shingleColor, ventilationColor, dripEdgeColor, notes } = req.body;
+    const { 
+      month, address, certOfComp, contractDate, estimateDate, installDate, owner,
+      totalCost, requiredDownPayment, financeAmount, additionalExpense,
+      totalBalanceDue, toooP, depAmtHeld, amountDue, pmntMethod,
+      datePaid, checkNumber, amountPaid, dripEdgeColor, ventilationColor,
+      manufacturer, shingleType, shingleColor, estimatedSquares, notes,
+      phone, email
+    } = req.body;
     
     if (!month || !owner) return res.status(400).json({ error: 'Missing month or owner' });
     
     const rowData = [
-      address || '',           // A - Address
-      '',                     // B - Cert Of Comp
-      contractDate || '',     // C - Contract Date
-      '',                     // D - Estimate Date
-      '',                     // E - Install Date
-      owner || '',            // F - Owner
-      totalCost || '',        // G - Total Cost
-      '',                     // H - Required Down Payment
-      '',                     // I - Finance Amount
-      '',                     // J - Additional Expense
-      totalCost || '',        // K - Total Balance Due
-      toooP || '',            // L - T.O.O.P
-      '',                     // M - DEP Amt Held
-      '',                     // N - Amount Due
-      '',                     // O - Pmnt Method
-      '',                     // P - (empty)
-      '',                     // Q - Date Paid
-      '',                     // R - Check #
-      '',                     // S - Amount Paid
-      dripEdgeColor || '',    // T - Drip Edge Color
-      ventilationColor || '',// U - Ventilation Color
-      manufacturer || '',     // V - Manufacturer
-      shingleType || '',      // W - Shingle Type
-      shingleColor || '',     // X - Shingle Color
-      '',                     // Y - Estimated Squares
-      notes || '',            // Z - Notes
-      '',                     // AA - (empty)
-      '',                     // AB - (empty)
-      '',                     // AC - (empty)
-      '',                     // AD - (empty)
-      ''                      // AE - (empty)
+      address || '',                // A - Address
+      certOfComp || '',             // B - Cert Of Comp
+      contractDate || '',          // C - Contract Date
+      estimateDate || '',          // D - Estimate Date
+      installDate || '',           // E - Install Date
+      owner || '',                 // F - Owner
+      totalCost || '',             // G - Total Cost
+      requiredDownPayment || '',   // H - Required Down Payment
+      financeAmount || '',         // I - Finance Amount
+      additionalExpense || '',     // J - Additional Expense
+      totalBalanceDue || totalCost || '', // K - Total Balance Due
+      toooP || '',                 // L - T.O.O.P
+      depAmtHeld || '',            // M - DEP Amt Held
+      amountDue || '',             // N - Amount Due
+      pmntMethod || '',            // O - Pmnt Method
+      '',                          // P - (empty)
+      datePaid || '',              // Q - Date Paid
+      checkNumber || '',           // R - Check #
+      amountPaid || '',            // S - Amount Paid
+      dripEdgeColor || '',         // T - Drip Edge Color
+      ventilationColor || '',      // U - Ventilation Color
+      manufacturer || '',          // V - Manufacturer
+      shingleType || '',           // W - Shingle Type
+      shingleColor || '',          // X - Shingle Color
+      estimatedSquares || '',      // Y - Estimated Squares
+      notes || '',                 // Z - Notes
+      phone || '',                 // AA - (using as contact)
+      email || '',                 // AB - (using as contact)
+      '',                          // AC - (empty)
+      '',                          // AD - (empty)
+      ''                           // AE - (empty)
     ];
     
     const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A:AE` });
