@@ -538,16 +538,6 @@
         showMenu();
       }).catch(err => alert('Error: ' + err.message));
     }
-        .then(r => r.json())
-        .then(months => {
-          const monthNames = Object.keys(months).filter(m => m !== 'Contractor' && months[m].length > 0);
-          if (monthNames.length === 0) {
-            alert('No jobs found');
-            return;
-          }
-          
-          // Build month buttons
-          let html = '<div class="grid grid-cols-3 gap-2 mb-4">';
           monthNames.forEach(m => {
             html += `<button onclick="showInstallJobs('${m}')" class="btn-slick py-3 px-4 rounded-xl font-medium text-white">${m}</button>`;
           });
