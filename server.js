@@ -523,4 +523,10 @@ app.post('/api/upload-file', upload.single('file'), async (req, res) => {
   }
 });
 
-app.listen(process.env.PORT || 3000, () => console.log('Running - UPDATED'));
+// Vercel export
+module.exports = app;
+
+// Also start server locally if not in Vercel environment
+if (process.env.VERCEL === undefined) {
+  app.listen(process.env.PORT || 3000, () => console.log('Running locally on port 3000'));
+}
