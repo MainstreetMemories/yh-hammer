@@ -479,30 +479,26 @@ app.post('/api/save-confirmed', async (req, res) => {
     const today = new Date().toLocaleDateString('en-US');
     const address = rowData[0] || '';
     
-    console.log('Payment check - datePaid:', data.datePaid, 'existing:', existingRow[16]);
-    
-    // Homeowner payment (Q, R, S = indices 16, 17, 18) - log if there's a value
-    if (data.datePaid && data.datePaid !== (existingRow[16] || '')) {
+    // Homeowner payment - only log if there's a value AND it changed
+    if (data.datePaid && data.datePaid !== existingRow[16]) {
       paymentsToLog.push({ date: data.datePaid, check: data.checkNum || '', amount: data.amountPaid || '', type: 'Receivable', category: 'Homeowner' });
     }
-    // Depreciation payment (AI, AJ = indices 34, 35)
-    if (data.depCheckNum && data.depCheckNum !== (existingRow[34] || '')) {
+    // Depreciation payment
+    if (data.depCheckNum && data.depCheckNum !== existingRow[34]) {
       paymentsToLog.push({ date: today, check: data.depCheckNum || '', amount: data.depAmount || '', type: 'Receivable', category: 'Depreciation' });
     }
-    // Labor payment (AC, AD, AE = indices 28, 29, 30)
-    if (data.laborPaid && data.laborPaid !== (existingRow[30] || '')) {
+    // Labor payment
+    if (data.laborPaid && data.laborPaid !== existingRow[30]) {
       paymentsToLog.push({ date: today, check: data.laborCheckNum || '', amount: data.laborPaid || '', type: 'Payable', category: 'Labor' });
     }
-    // Salesperson Commission (AF, AG, AH = indices 31, 32, 33)
-    if (data.salesPaid && data.salesPaid !== (existingRow[33] || '')) {
+    // Salesperson Commission
+    if (data.salesPaid && data.salesPaid !== existingRow[33]) {
       paymentsToLog.push({ date: today, check: data.salesCheckNum || '', amount: data.salesPaid || '', type: 'Payable', category: 'Salesperson Commission' });
     }
-    // Salesperson Depreciation (AK, AL = indices 36, 37)
-    if (data.salesDepAmount && data.salesDepAmount !== (existingRow[37] || '')) {
+    // Salesperson Depreciation
+    if (data.salesDepAmount && data.salesDepAmount !== existingRow[37]) {
       paymentsToLog.push({ date: today, check: data.salesDepCheckNum || '', amount: data.salesDepAmount || '', type: 'Payable', category: 'Salesperson Depreciation' });
     }
-    
-    console.log('Payments to log:', paymentsToLog);
     
     // Write to Payments tab
     if (paymentsToLog.length > 0) {
