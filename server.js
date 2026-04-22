@@ -381,7 +381,7 @@ app.get('/api/get-job', async (req, res) => {
     const { month, row } = req.query;
     if (!month || !row) return res.status(400).json({ error: 'Missing month or row' });
     
-    const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: month + '!A' + row + ':AE' + row });
+    const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: month + '!A' + row + ':AL' + row });
     const job = r.data.values?.[0] || [];
     
     res.json({
