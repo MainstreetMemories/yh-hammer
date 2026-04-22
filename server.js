@@ -516,6 +516,29 @@ app.post('/api/save-confirmed', async (req, res) => {
           });
           payNextRow++;
         }
+        
+        // Sort Payments tab by Address (A) then Date (B)
+        try {
+          const sortR = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: 'Payments!A:F' });
+          const allPayments = sortR.data.values || [];
+          if (allPayments.length > 1) {
+            const header = allPayments[0];
+            const data = allPayments.slice(1).sort((a, b) => {
+              // Sort by Address (col 0) first, then Date (col 1)
+              if (a[0] !== b[0]) return (a[0] || '').localeCompare(b[0] || '');
+              return (a[1] || '').localeCompare(b[1] || '');
+            });
+            // Write back sorted (skip header row, write from row 2)
+            await sheets.spreadsheets.values.update({
+              spreadsheetId: SPREADSHEET_ID,
+              range: 'Payments!A2:F' + (data.length + 1),
+              valueInputOption: 'USER_ENTERED',
+              requestBody: { values: data }
+            });
+          }
+        } catch (sortErr) {
+          console.log('Payment sort error:', sortErr.message);
+        }
       } catch (payErr) {
         console.log('Payment log error:', payErr.message);
       }
