@@ -16,14 +16,21 @@ if (process.env.GOOGLE_CREDS) {
   credentials = JSON.parse(fs.readFileSync(path.join(__dirname, 'credentials.json')));
 }
 
-const auth = new google.auth.GoogleAuth({ credentials, scopes: ['https://www.googleapis.com/auth/spreadsheets'] });
+const auth = new google.auth.GoogleAuth({ credentials, scopes: ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive.file'] });
 const sheets = google.sheets({ version: 'v4', auth });
+const drive = google.drive({ version: 'v3', auth });
+
+// Google Drive folder IDs
+const DRIVE_CONTRACTS_FOLDER_ID = '1q17eaOYiSijt76DWDgbsaL6nf3W8QimE';
 
 const SPREADSHEET_ID = '1YmEsM3AvtIbNqto8DoYLMO48tH13UY23niGvRz5vOtU';
 
 const app = express();
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static('public'));
+
+// Temporary storage for uploaded contract files (cleared after save)
+let pendingContractFile = null;
 
 // Get all jobs
 app.get('/api/jobs', async (req, res) => {
@@ -100,6 +107,9 @@ app.post('/api/upload-json', async (req, res) => {
       dripEdgeColor: field('Drip Edge') || field('Drip Edge Color') || '',
       notes: (field('ROOFING WORK TO BE PERFORMED') ? field('ROOFING WORK TO BE PERFORMED') + ' ' : '') + (field('EXTERIOR/INTERIOR WORK TO BE PERFORMED') || field('Notes') || '')
     };
+    
+    // Store file temporarily for later upload to Google Drive
+    pendingContractFile = { file: req.body.file, isPdf: req.body.isPdf };
     
     res.json({ success: true, previewData: extracted });
   } catch (err) {
@@ -242,6 +252,49 @@ app.post('/api/save-extracted', async (req, res) => {
       });
     } catch (e) {
       console.log('Customer info save error:', e.message);
+    }
+    
+    // Create Google Drive folder and upload contract
+    if (pendingContractFile) {
+      try {
+        // Create folder name: "Owner - Address"
+        const folderName = `${owner} - ${address}`;
+        
+        // Create folder in the CONTRACTS folder
+        const folderMeta = {
+          name: folderName,
+          mimeType: 'application/vnd.google-apps.folder',
+          parents: [DRIVE_CONTRACTS_FOLDER_ID]
+        };
+        const folder = await drive.files.create({ resource: folderMeta, fields: 'id' });
+        const folderId = folder.data.id;
+        
+        // Convert base64 file to buffer
+        const fileBuffer = Buffer.from(pendingContractFile.file, 'base64');
+        const mimeType = pendingContractFile.isPdf ? 'application/pdf' : 'image/jpeg';
+        const ext = pendingContractFile.isPdf ? 'pdf' : 'jpg';
+        
+        // Upload file to the folder
+        const fileMeta = {
+          name: `contract_${Date.now()}.${ext}`,
+          parents: [folderId]
+        };
+        await drive.files.create({
+          resource: fileMeta,
+          media: {
+            mimeType: mimeType,
+            body: Buffer.from(pendingContractFile.file, 'base64')
+          }
+        });
+        
+        console.log('Contract saved to Google Drive:', folderName);
+        
+        // Clear the pending file
+        pendingContractFile = null;
+      } catch (driveErr) {
+        console.log('Google Drive save error:', driveErr.message);
+        // Don't fail the whole operation if Drive fails
+      }
     }
     
     res.json({ success: true, month, owner });
