@@ -568,7 +568,7 @@
           document.getElementById('staticButtons').classList.add('hidden');
           document.getElementById('fields').innerHTML = 
             paymentHtml +
-            `<button onclick="savePayment('${month}', ${row})" class="bg-yellow-500 w-full py-3 rounded-xl font-bold text-black mt-3">Save Payments</button>
+            `<button onclick="savePayment('${month}', ${job.row})" class="bg-yellow-500 w-full py-3 rounded-xl font-bold text-black mt-3">Save Payments</button>
             <button onclick="addPayment()" class="text-zinc-500 text-sm mt-3 block w-full text-center">← Back</button>`;
         });
     }

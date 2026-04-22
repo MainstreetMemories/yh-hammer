@@ -385,6 +385,7 @@ app.get('/api/get-job', async (req, res) => {
     const job = r.data.values?.[0] || [];
     
     res.json({
+      row: row, // <-- Add row to the returned object
       address: job[0] || '', certOfComp: job[1] || '', contractDate: job[2] || '',
       estimateDate: job[3] || '', installDate: job[4] || '', owner: job[5] || '',
       totalCost: job[6] || '', requiredDownPayment: job[7] || '', financeAmount: job[8] || '',
@@ -412,35 +413,68 @@ app.post('/api/save-confirmed', async (req, res) => {
     const data = req.body;
     const { month, row } = data;
     if (!month) return res.status(400).json({ error: 'Missing month' });
+    if (!row) return res.status(400).json({ error: 'Missing row' });
     
-    const rowData = [
-      data.address || '', data.certOfComp || '', data.contractDate || '', data.estimateDate || '',
-      data.installDate || '', data.owner || '', data.totalCost || '', data.requiredDownPayment || '',
-      data.financeAmount || '', data.additionalExpense || '', data.totalBalanceDue || '', data.toooP || '',
-      data.depAmtHeld || '', data.amountDue || '', data.pmntMethod || '', data.phone || '', data.email || '',
-      data.datePaid || '', data.checkNum || '', data.amountPaid || '', data.dripEdgeColor || '',
-      data.ventilationColor || '', data.manufacturer || '', data.shingleType || '', data.shingleColor || '',
-      data.estimatedSquares || '', data.notes || '',
-      // Labor: AC(28), AD(29), AE(30)
-      data.laborContractor || '', data.laborCheckNum || '', data.laborPaid || '',
-      // Salesperson Commission: AF(31), AG(32), AH(33)
-      data.salesCheckNum || '', data.salesperson || '', data.salesPaid || '',
-      // Depreciation: AI(34), AJ(35)
-      data.depCheckNum || '', data.depAmount || '',
-      // Salesperson Depreciation: AK(36), AL(37)
-      data.salesDepCheckNum || '', data.salesDepAmount || ''
-    ];
+    // First, read the existing row to preserve all other data
+    const getResp = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: month + '!A' + row + ':AL' + row });
+    const existingRow = getResp.data.values?.[0] || [];
     
-    let targetRow = row || ((await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: month + '!A:AL' })).data.values?.length || 0) + 1;
+    // Initialize rowData with existing values (extend to 38 columns if needed)
+    let rowData = [...existingRow];
+    while (rowData.length < 38) rowData.push('');
+    
+    // Update only the fields that were sent in the request
+    // A=0, B=1, C=2, D=3, E=4, F=5, G=6, H=7, I=8, J=9, K=10, L=11, M=12, N=13, O=14, P=15, Q=16, R=17, S=18, T=19, U=20, V=21, W=22, X=23, Y=24, Z=25
+    if (data.address !== undefined) rowData[0] = data.address;
+    if (data.certOfComp !== undefined) rowData[1] = data.certOfComp;
+    if (data.contractDate !== undefined) rowData[2] = data.contractDate;
+    if (data.estimateDate !== undefined) rowData[3] = data.estimateDate;
+    if (data.installDate !== undefined) rowData[4] = data.installDate;
+    if (data.owner !== undefined) rowData[5] = data.owner;
+    if (data.totalCost !== undefined) rowData[6] = data.totalCost;
+    if (data.requiredDownPayment !== undefined) rowData[7] = data.requiredDownPayment;
+    if (data.financeAmount !== undefined) rowData[8] = data.financeAmount;
+    if (data.additionalExpense !== undefined) rowData[9] = data.additionalExpense;
+    if (data.totalBalanceDue !== undefined) rowData[10] = data.totalBalanceDue;
+    if (data.toooP !== undefined) rowData[11] = data.toooP;
+    if (data.depAmtHeld !== undefined) rowData[12] = data.depAmtHeld;
+    if (data.amountDue !== undefined) rowData[13] = data.amountDue;
+    if (data.pmntMethod !== undefined) rowData[14] = data.pmntMethod;
+    if (data.phone !== undefined) rowData[15] = data.phone;
+    if (data.email !== undefined) rowData[15] = data.email; // P = column 16, index 15
+    if (data.datePaid !== undefined) rowData[16] = data.datePaid; // Q = column 17, index 16
+    if (data.checkNum !== undefined) rowData[17] = data.checkNum; // R = column 18, index 17
+    if (data.amountPaid !== undefined) rowData[18] = data.amountPaid; // S = column 19, index 18
+    if (data.dripEdgeColor !== undefined) rowData[19] = data.dripEdgeColor; // T = 19
+    if (data.ventilationColor !== undefined) rowData[20] = data.ventilationColor; // U = 20
+    if (data.manufacturer !== undefined) rowData[21] = data.manufacturer; // V = 21
+    if (data.shingleType !== undefined) rowData[22] = data.shingleType; // W = 22
+    if (data.shingleColor !== undefined) rowData[23] = data.shingleColor; // X = 23
+    if (data.estimatedSquares !== undefined) rowData[24] = data.estimatedSquares; // Y = 24
+    if (data.notes !== undefined) rowData[25] = data.notes; // Z = 25
+    // Labor: AC=28, AD=29, AE=30
+    if (data.laborContractor !== undefined) rowData[28] = data.laborContractor;
+    if (data.laborCheckNum !== undefined) rowData[29] = data.laborCheckNum;
+    if (data.laborPaid !== undefined) rowData[30] = data.laborPaid;
+    // Salesperson Commission: AF=31, AG=32, AH=33
+    if (data.salesCheckNum !== undefined) rowData[31] = data.salesCheckNum;
+    if (data.salesperson !== undefined) rowData[32] = data.salesperson;
+    if (data.salesPaid !== undefined) rowData[33] = data.salesPaid;
+    // Depreciation: AI=34, AJ=35
+    if (data.depCheckNum !== undefined) rowData[34] = data.depCheckNum;
+    if (data.depAmount !== undefined) rowData[35] = data.depAmount;
+    // Salesperson Depreciation: AK=36, AL=37
+    if (data.salesDepCheckNum !== undefined) rowData[36] = data.salesDepCheckNum;
+    if (data.salesDepAmount !== undefined) rowData[37] = data.salesDepAmount;
     
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
-      range: month + '!A' + targetRow + ':AL' + targetRow,
+      range: month + '!A' + row + ':AL' + row,
       valueInputOption: 'USER_ENTERED',
       requestBody: { values: [rowData] }
     });
     
-    res.json({ success: true, month: month, row: targetRow });
+    res.json({ success: true, month: month, row: row });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
