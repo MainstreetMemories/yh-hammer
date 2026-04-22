@@ -310,7 +310,7 @@ app.post('/api/request-estimate', async (req, res) => {
     if (!month || !row) return res.status(400).json({ error: 'Missing month or row' });
     
     // Get columns A (0), F (5), V (21), W (22), X (23), Z (25)
-    const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: month + '!A' + row + ':Z' + row });
+    const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: month + '!A' + row + ':AL' + row });
     const job = r.data.values?.[0] || [];
     const owner = job[5] || 'Unknown';
     const address = job[0] || '';
@@ -346,7 +346,7 @@ app.post('/api/request-install', async (req, res) => {
     const { month, row, installDate } = req.body;
     if (!month || !row) return res.status(400).json({ error: 'Missing month or row' });
     
-    const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: month + '!A' + row + ':Z' + row });
+    const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: month + '!A' + row + ':AL' + row });
     const job = r.data.values?.[0] || [];
     const owner = job[5] || 'Unknown';
     const address = job[0] || '';
@@ -390,10 +390,16 @@ app.get('/api/get-job', async (req, res) => {
       totalCost: job[6] || '', requiredDownPayment: job[7] || '', financeAmount: job[8] || '',
       additionalExpense: job[9] || '', totalBalanceDue: job[10] || '', toooP: job[11] || '',
       depAmtHeld: job[12] || '', amountDue: job[13] || '', pmntMethod: job[14] || '',
-      phone: job[15] || '', email: job[16] || '', datePaid: job[17] || '', checkNum: job[18] || '',
-      amountPaid: job[19] || '', dripEdgeColor: job[20] || '', ventilationColor: job[21] || '',
-      manufacturer: job[27] || '', shingleType: job[22] || '', shingleColor: job[23] || '',
-      estimatedSquares: job[24] || '', notes: job[25] || '', paid: job[30] || ''
+      phone: job[15] || '', email: job[16] || '', datePaid: job[16] || '', checkNum: job[17] || '',
+      amountPaid: job[18] || '', dripEdgeColor: job[19] || '', ventilationColor: job[20] || '',
+      manufacturer: job[21] || '', shingleType: job[22] || '', shingleColor: job[23] || '',
+      estimatedSquares: job[24] || '', notes: job[25] || '',
+      // Payment fields
+      laborContractor: job[28] || '', laborCheckNum: job[29] || '', laborPaid: job[30] || '',
+      salesCheckNum: job[31] || '', salesperson: job[32] || '', salesPaid: job[33] || '',
+      depCheckNum: job[34] || '', depAmount: job[35] || '',
+      salesDepCheckNum: job[36] || '', salesDepAmount: job[37] || '',
+      paid: job[30] || ''
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -414,14 +420,22 @@ app.post('/api/save-confirmed', async (req, res) => {
       data.depAmtHeld || '', data.amountDue || '', data.pmntMethod || '', data.phone || '', data.email || '',
       data.datePaid || '', data.checkNum || '', data.amountPaid || '', data.dripEdgeColor || '',
       data.ventilationColor || '', data.manufacturer || '', data.shingleType || '', data.shingleColor || '',
-      data.estimatedSquares || '', data.notes || '', data.salesperson || ''
+      data.estimatedSquares || '', data.notes || '',
+      // Labor: AC(28), AD(29), AE(30)
+      data.laborContractor || '', data.laborCheckNum || '', data.laborPaid || '',
+      // Salesperson Commission: AF(31), AG(32), AH(33)
+      data.salesCheckNum || '', data.salesperson || '', data.salesPaid || '',
+      // Depreciation: AI(34), AJ(35)
+      data.depCheckNum || '', data.depAmount || '',
+      // Salesperson Depreciation: AK(36), AL(37)
+      data.salesDepCheckNum || '', data.salesDepAmount || ''
     ];
     
-    let targetRow = row || ((await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: month + '!A:AE' })).data.values?.length || 0) + 1;
+    let targetRow = row || ((await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: month + '!A:AL' })).data.values?.length || 0) + 1;
     
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
-      range: month + '!A' + targetRow + ':AE' + targetRow,
+      range: month + '!A' + targetRow + ':AL' + targetRow,
       valueInputOption: 'USER_ENTERED',
       requestBody: { values: [rowData] }
     });
