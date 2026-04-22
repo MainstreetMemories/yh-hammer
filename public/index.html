@@ -460,6 +460,7 @@
     }
     
     // Add Payment Function
+    // Add Payment Function
     function addPayment() {
       fetch(API + '/api/jobs')
         .then(r => r.json())
@@ -508,156 +509,98 @@
       fetch(API + '/api/get-job?month=' + month + '&row=' + row)
         .then(r => r.json())
         .then(job => {
-          // Build payment display with all 5 types
+          // Convert date to YYYY-MM-DD for date input
+          let dateValue = '';
+          if (job.datePaid) {
+            const parts = job.datePaid.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+            if (parts) {
+              let y = parts[3];
+              if (y.length === 2) y = '20' + y;
+              const m = parts[1].padStart(2, '0');
+              const d = parts[2].padStart(2, '0');
+              dateValue = y + '-' + m + '-' + d;
+            }
+          }
+          
+          // All payment fields as editable inputs
           let paymentHtml = `
             <div class="bg-zinc-800 rounded-xl p-4 mb-4">
               <h3 class="text-yellow-400 font-bold mb-3">💵 Homeowner Payment</h3>
-              <div class="grid grid-cols-3 gap-2 text-sm">
-                <div><span class="text-zinc-500">Date:</span> <span class="text-white">${job.datePaid || '-'}</span></div>
-                <div><span class="text-zinc-500">Check #:</span> <span class="text-white">${job.checkNum || '-'}</span></div>
-                <div><span class="text-zinc-500">Amount:</span> <span class="text-green-400">${job.amountPaid || '-'}</span></div>
+              <div class="space-y-2">
+                <input id="datePaid" type="date" value="${dateValue}" class="input-slick w-full p-3 rounded-xl text-white text-sm" placeholder="Date Paid" style="color-scheme: dark;">
+                <input id="checkNum" class="input-slick w-full p-3 rounded-xl text-white text-sm" placeholder="Check #" value="${job.checkNum || ''}">
+                <input id="amountPaid" class="input-slick w-full p-3 rounded-xl text-white text-sm" placeholder="Amount" value="${job.amountPaid || ''}">
               </div>
             </div>
             <div class="bg-zinc-800 rounded-xl p-4 mb-4">
               <h3 class="text-blue-400 font-bold mb-3">🏠 Depreciation</h3>
-              <div class="grid grid-cols-2 gap-2 text-sm">
-                <div><span class="text-zinc-500">Check #:</span> <span class="text-white">${job.depCheckNum || '-'}</span></div>
-                <div><span class="text-zinc-500">Amount:</span> <span class="text-green-400">${job.depAmount || '-'}</span></div>
+              <div class="space-y-2">
+                <input id="depCheckNum" class="input-slick w-full p-3 rounded-xl text-white text-sm" placeholder="Check #" value="${job.depCheckNum || ''}">
+                <input id="depAmount" class="input-slick w-full p-3 rounded-xl text-white text-sm" placeholder="Amount" value="${job.depAmount || ''}">
               </div>
             </div>
             <div class="bg-zinc-800 rounded-xl p-4 mb-4">
               <h3 class="text-orange-400 font-bold mb-3">👷 Labor Payment</h3>
-              <div class="grid grid-cols-3 gap-2 text-sm">
-                <div><span class="text-zinc-500">Contractor:</span> <span class="text-white">${job.laborContractor || '-'}</span></div>
-                <div><span class="text-zinc-500">Check #:</span> <span class="text-white">${job.laborCheckNum || '-'}</span></div>
-                <div><span class="text-zinc-500">Paid:</span> <span class="text-green-400">${job.laborPaid || '-'}</span></div>
+              <div class="space-y-2">
+                <input id="laborContractor" class="input-slick w-full p-3 rounded-xl text-white text-sm" placeholder="Contractor" value="${job.laborContractor || ''}">
+                <input id="laborCheckNum" class="input-slick w-full p-3 rounded-xl text-white text-sm" placeholder="Check #" value="${job.laborCheckNum || ''}">
+                <input id="laborPaid" class="input-slick w-full p-3 rounded-xl text-white text-sm" placeholder="Amount" value="${job.laborPaid || ''}">
               </div>
             </div>
             <div class="bg-zinc-800 rounded-xl p-4 mb-4">
               <h3 class="text-purple-400 font-bold mb-3">💼 Sales Commission</h3>
-              <div class="grid grid-cols-3 gap-2 text-sm">
-                <div><span class="text-zinc-500">Check #:</span> <span class="text-white">${job.salesCheckNum || '-'}</span></div>
-                <div><span class="text-zinc-500">Salesperson:</span> <span class="text-white">${job.salesperson || '-'}</span></div>
-                <div><span class="text-zinc-500">Paid:</span> <span class="text-green-400">${job.salesPaid || '-'}</span></div>
+              <div class="space-y-2">
+                <input id="salesCheckNum" class="input-slick w-full p-3 rounded-xl text-white text-sm" placeholder="Check #" value="${job.salesCheckNum || ''}">
+                <input id="salesperson" class="input-slick w-full p-3 rounded-xl text-white text-sm" placeholder="Salesperson" value="${job.salesperson || ''}">
+                <input id="salesPaid" class="input-slick w-full p-3 rounded-xl text-white text-sm" placeholder="Amount" value="${job.salesPaid || ''}">
               </div>
             </div>
             <div class="bg-zinc-800 rounded-xl p-4 mb-4">
               <h3 class="text-pink-400 font-bold mb-3">📊 Sales Depreciation</h3>
-              <div class="grid grid-cols-2 gap-2 text-sm">
-                <div><span class="text-zinc-500">Check #:</span> <span class="text-white">${job.salesDepCheckNum || '-'}</span></div>
-                <div><span class="text-zinc-500">Amount:</span> <span class="text-green-400">${job.salesDepAmount || '-'}</span></div>
+              <div class="space-y-2">
+                <input id="salesDepCheckNum" class="input-slick w-full p-3 rounded-xl text-white text-sm" placeholder="Check #" value="${job.salesDepCheckNum || ''}">
+                <input id="salesDepAmount" class="input-slick w-full p-3 rounded-xl text-white text-sm" placeholder="Amount" value="${job.salesDepAmount || ''}">
               </div>
             </div>
           `;
           
-          // Payment type selector
-          let typeOptions = `
-            <option value="">Select Payment Type</option>
-            <option value="homeowner">💵 Homeowner Payment</option>
-            <option value="depreciation">🏠 Depreciation</option>
-            <option value="labor">👷 Labor Payment</option>
-            <option value="sales">💼 Sales Commission</option>
-            <option value="salesDep">📊 Sales Depreciation</option>
-          `;
-          
-          document.getElementById('modalTitle').innerText = 'Add Payment';
+          document.getElementById('modalTitle').innerText = 'Edit Payments';
           document.getElementById('staticButtons').classList.add('hidden');
           document.getElementById('fields').innerHTML = 
             paymentHtml +
-            `<div class="border-t border-zinc-700 pt-4 mt-4">
-              <label class="text-zinc-500 text-xs uppercase tracking-wide font-medium">Add New Payment</label>
-              <select id="paymentType" onchange="togglePaymentFields()" class="input-slick w-full p-3 rounded-xl text-white text-sm mt-1 mb-3">
-                ${typeOptions}
-              </select>
-              
-              <!-- Homeowner fields -->
-              <div id="homeownerFields" class="hidden space-y-3">
-                <div><label class="text-zinc-500 text-xs">Date Paid</label><input id="payDatePaid" type="date" class="input-slick w-full p-3 rounded-xl text-white text-sm" style="color-scheme: dark;"></div>
-                <div><label class="text-zinc-500 text-xs">Check #</label><input id="payCheckNum" class="input-slick w-full p-3 rounded-xl text-white text-sm"></div>
-                <div><label class="text-zinc-500 text-xs">Amount</label><input id="payAmount" class="input-slick w-full p-3 rounded-xl text-white text-sm"></div>
-              </div>
-              
-              <!-- Depreciation fields -->
-              <div id="depreciationFields" class="hidden space-y-3">
-                <div><label class="text-zinc-500 text-xs">Check #</label><input id="depCheckNum" class="input-slick w-full p-3 rounded-xl text-white text-sm"></div>
-                <div><label class="text-zinc-500 text-xs">Amount</label><input id="depAmount" class="input-slick w-full p-3 rounded-xl text-white text-sm"></div>
-              </div>
-              
-              <!-- Labor fields -->
-              <div id="laborFields" class="hidden space-y-3">
-                <div><label class="text-zinc-500 text-xs">Contractor</label><input id="laborContractor" class="input-slick w-full p-3 rounded-xl text-white text-sm"></div>
-                <div><label class="text-zinc-500 text-xs">Check #</label><input id="laborCheckNum" class="input-slick w-full p-3 rounded-xl text-white text-sm"></div>
-                <div><label class="text-zinc-500 text-xs">Amount</label><input id="laborPaid" class="input-slick w-full p-3 rounded-xl text-white text-sm"></div>
-              </div>
-              
-              <!-- Sales Commission fields -->
-              <div id="salesFields" class="hidden space-y-3">
-                <div><label class="text-zinc-500 text-xs">Check #</label><input id="salesCheckNum" class="input-slick w-full p-3 rounded-xl text-white text-sm"></div>
-                <div><label class="text-zinc-500 text-xs">Salesperson</label><input id="salesperson" class="input-slick w-full p-3 rounded-xl text-white text-sm"></div>
-                <div><label class="text-zinc-500 text-xs">Amount</label><input id="salesPaid" class="input-slick w-full p-3 rounded-xl text-white text-sm"></div>
-              </div>
-              
-              <!-- Sales Depreciation fields -->
-              <div id="salesDepFields" class="hidden space-y-3">
-                <div><label class="text-zinc-500 text-xs">Check #</label><input id="salesDepCheckNum" class="input-slick w-full p-3 rounded-xl text-white text-sm"></div>
-                <div><label class="text-zinc-500 text-xs">Amount</label><input id="salesDepAmount" class="input-slick w-full p-3 rounded-xl text-white text-sm"></div>
-              </div>
-              
-              <button onclick="savePayment('${month}', ${row})" class="bg-yellow-500 w-full py-3 rounded-xl font-bold text-black mt-3">Save Payment</button>
-            </div>
-            <button onclick="addPayment()" class="text-zinc-500 text-sm mt-3">← Back</button>`;
+            `<button onclick="savePayment('${month}', ${row})" class="bg-yellow-500 w-full py-3 rounded-xl font-bold text-black mt-3">Save Payments</button>
+            <button onclick="addPayment()" class="text-zinc-500 text-sm mt-3 block w-full text-center">← Back</button>`;
         });
     }
     
-    function togglePaymentFields() {
-      const type = document.getElementById('paymentType').value;
-      document.getElementById('homeownerFields').classList.add('hidden');
-      document.getElementById('depreciationFields').classList.add('hidden');
-      document.getElementById('laborFields').classList.add('hidden');
-      document.getElementById('salesFields').classList.add('hidden');
-      document.getElementById('salesDepFields').classList.add('hidden');
-      if (type) document.getElementById(type + 'Fields').classList.remove('hidden');
-    }
-    
     function savePayment(month, row) {
-      const type = document.getElementById('paymentType').value;
-      if (!type) {
-        alert('Please select a payment type');
-        return;
-      }
-      
-      let data = { month, row };
-      
-      if (type === 'homeowner') {
-        data.datePaid = document.getElementById('payDatePaid').value;
-        data.checkNum = document.getElementById('payCheckNum').value;
-        data.amountPaid = document.getElementById('payAmount').value;
-      } else if (type === 'depreciation') {
-        data.depCheckNum = document.getElementById('depCheckNum').value;
-        data.depAmount = document.getElementById('depAmount').value;
-      } else if (type === 'labor') {
-        data.laborContractor = document.getElementById('laborContractor').value;
-        data.laborCheckNum = document.getElementById('laborCheckNum').value;
-        data.laborPaid = document.getElementById('laborPaid').value;
-      } else if (type === 'sales') {
-        data.salesCheckNum = document.getElementById('salesCheckNum').value;
-        data.salesperson = document.getElementById('salesperson').value;
-        data.salesPaid = document.getElementById('salesPaid').value;
-      } else if (type === 'salesDep') {
-        data.salesDepCheckNum = document.getElementById('salesDepCheckNum').value;
-        data.salesDepAmount = document.getElementById('salesDepAmount').value;
-      }
+      const data = {
+        month,
+        row,
+        datePaid: document.getElementById('datePaid').value,
+        checkNum: document.getElementById('checkNum').value,
+        amountPaid: document.getElementById('amountPaid').value,
+        depCheckNum: document.getElementById('depCheckNum').value,
+        depAmount: document.getElementById('depAmount').value,
+        laborContractor: document.getElementById('laborContractor').value,
+        laborCheckNum: document.getElementById('laborCheckNum').value,
+        laborPaid: document.getElementById('laborPaid').value,
+        salesCheckNum: document.getElementById('salesCheckNum').value,
+        salesperson: document.getElementById('salesperson').value,
+        salesPaid: document.getElementById('salesPaid').value,
+        salesDepCheckNum: document.getElementById('salesDepCheckNum').value,
+        salesDepAmount: document.getElementById('salesDepAmount').value
+      };
       
       fetch(API + '/api/save-confirmed', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(data)
       }).then(r => r.json()).then(result => {
-        alert(result.success ? '✓ Payment Saved!' : 'Error: ' + result.error);
+        alert(result.success ? '✓ Payments Saved!' : 'Error: ' + result.error);
         showMenu();
       }).catch(err => alert('Error: ' + err.message));
     }
-    
     function addInstallDate() {
       fetch(API + '/api/jobs')
         .then(r => r.json())
