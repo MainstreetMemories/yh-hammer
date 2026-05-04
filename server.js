@@ -229,8 +229,19 @@ app.post('/api/save-extracted', async (req, res) => {
     ];
     
     const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A:AE` });
-    // Data starts at row 2 (row 1 is header)
-    const nextRow = (r.data.values?.length || 0) + 1;
+    // Find first empty row (where both Address (col A) and Owner (col F) are empty)
+    // Skip header row (row 1), start from row 2
+    let nextRow = 2;
+    if (r.data.values) {
+      for (let i = 0; i < r.data.values.length; i++) {
+        const address = (r.data.values[i][0] || '').toString().trim();
+        const owner = (r.data.values[i][5] || '').toString().trim();
+        if (!address && !owner) {
+          nextRow = i + 1;  // i is 0-indexed, row is i+1, but data starts at row 2
+          break;
+        }
+      }
+    }
     
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
@@ -243,7 +254,17 @@ app.post('/api/save-extracted', async (req, res) => {
     // A=Name, B=Address, C=Phone, D=Email
     try {
       const custR = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: 'Customer Information!A:D' });
-      const custNextRow = (custR.data.values?.length || 0) + 1;
+      // Find first empty row where Name (col A) is empty
+      let custNextRow = 2;
+      if (custR.data.values) {
+        for (let i = 0; i < custR.data.values.length; i++) {
+          const name = (custR.data.values[i][0] || '').toString().trim();
+          if (!name) {
+            custNextRow = i + 1;
+            break;
+          }
+        }
+      }
       await sheets.spreadsheets.values.update({
         spreadsheetId: SPREADSHEET_ID,
         range: `Customer Information!A${custNextRow}:D${custNextRow}`,
@@ -503,9 +524,18 @@ app.post('/api/save-confirmed', async (req, res) => {
     // Write to Payments tab
     if (paymentsToLog.length > 0) {
       try {
-        // Get next row in Payments tab
+        // Get next row in Payments tab - find first empty row
         const payR = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: 'Payments!A:F' });
-        const payNextRow = (payR.data.values?.length || 0) + 1;
+        let payNextRow = 2;
+        if (payR.data.values) {
+          for (let i = 0; i < payR.data.values.length; i++) {
+            const addr = (payR.data.values[i][0] || '').toString().trim();
+            if (!addr) {
+              payNextRow = i + 1;
+              break;
+            }
+          }
+        }
         
         for (const p of paymentsToLog) {
           await sheets.spreadsheets.values.update({
