@@ -463,6 +463,9 @@ app.post('/api/save-confirmed', async (req, res) => {
     let rowData = [...existingRow];
     while (rowData.length < 38) rowData.push('');
     
+    // Preserve column N (index 13) - it has a formula
+    const preservedColN = existingRow[13] || '';
+    
     // Update only the fields that were sent in the request
     // A=0, B=1, C=2, D=3, E=4, F=5, G=6, H=7, I=8, J=9, K=10, L=11, M=12, N=13, O=14, P=15, Q=16, R=17, S=18, T=19, U=20, V=21, W=22, X=23, Y=24, Z=25
     if (data.address !== undefined) rowData[0] = data.address;
@@ -504,6 +507,9 @@ app.post('/api/save-confirmed', async (req, res) => {
     // Salesperson Depreciation: AK=36, AL=37
     if (data.salesDepCheckNum !== undefined) rowData[36] = data.salesDepCheckNum;
     if (data.salesDepAmount !== undefined) rowData[37] = data.salesDepAmount;
+    
+    // Restore column N formula value before writing
+    rowData[13] = preservedColN;
     
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
