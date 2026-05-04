@@ -518,14 +518,24 @@ app.post('/api/save-confirmed', async (req, res) => {
     if (data.salesDepCheckNum !== undefined) rowData[36] = data.salesDepCheckNum;
     if (data.salesDepAmount !== undefined) rowData[37] = data.salesDepAmount;
     
-    // Restore column N formula value before writing
+    // Restore column N value (formula result) before writing
     rowData[13] = preservedColN;
     
+    // Write in two parts to preserve column N
+    // Part 1: A to M (indices 0-12)
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
-      range: month + '!A' + row + ':AL' + row,
+      range: month + '!A' + row + ':M' + row,
       valueInputOption: 'USER_ENTERED',
-      requestBody: { values: [rowData] }
+      requestBody: { values: [rowData.slice(0, 13)] }
+    });
+    
+    // Part 2: O to AL (indices 14-37, skipping index 13)
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: month + '!O' + row + ':AL' + row,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: [rowData.slice(14)] }
     });
     
     // Log payments to Payments tab
