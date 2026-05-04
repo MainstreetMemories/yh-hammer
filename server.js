@@ -67,7 +67,7 @@ app.post('/api/upload-json', async (req, res) => {
     // Split pages and build content array
     const pages = isPdf ? file.split('||PAGE||') : [file];
     const content = [
-      { type: 'text', text: 'Extract from these contract pages: TOTAL COST, TOTAL OUT OF POCKET, Owner Name, Property Address (street,city,state,zip), Phone, Email, DATE (look for the date AFTER YHP Representative Signature, NOT the property owner date), Manufacturer, Shingle Type, Shingle Color, Ventilation Color, Drip Edge Color, ROOFING WORK TO BE PERFORMED, EXTERIOR/INTERIOR WORK TO BE PERFORMED, Printed Name. IMPORTANT: 1) For money amounts use format "TOTAL COST: 12069.14" with no $ sign. 2) The contract date is the SECOND date on the page (after YHP Rep signature), not the first date. Return as "Field: Value".' }
+      { type: 'text', text: 'Extract from these contract pages: TOTAL COST, TOTAL OUT OF POCKET, Owner Name, Property Address (street,city,state,zip), Payment Method, Phone, Email, DATE (look for the date AFTER YHP Representative Signature, NOT the property owner date), Manufacturer, Shingle Type, Shingle Color, Ventilation Color, Drip Edge Color, ROOFING WORK TO BE PERFORMED, EXTERIOR/INTERIOR WORK TO BE PERFORMED, Printed Name. IMPORTANT: 1) For money amounts use format "TOTAL COST: 12069.14" with no $ sign. 2) The contract date is the SECOND date on the page (after YHP Rep signature), not the first date. Return as "Field: Value".' }
     ];
     
     // Add each page as an image
@@ -135,7 +135,7 @@ app.post('/api/extract-data', async (req, res) => {
     // Split pages and build content array
     const pages = isPdf ? file.split('||PAGE||') : [file];
     const content = [
-      { type: 'text', text: 'Extract: Owner, Address (street city state zip), Phone, Email, Total Cost, T.O.O.P, Contract Date, Manufacturer, Shingle Type, Shingle Color, Ventilation Color, Drip Edge Color, Notes. Format: Field: Value' }
+      { type: 'text', text: 'Extract: Owner, Address (street city state zip), Payment Method, Phone, Email, Total Cost, T.O.O.P, Contract Date, Manufacturer, Shingle Type, Shingle Color, Ventilation Color, Drip Edge Color, Notes. Format: Field: Value' }
     ];
     
     // Add each page as an image
@@ -217,7 +217,7 @@ app.post('/api/save-extracted', async (req, res) => {
       toooP || '',                 // L - T.O.O.P
       depAmtHeld || '',            // M - DEP Amt Held
       '',                          // N - Amount Due (formula - don't overwrite)
-      pmntMethod || '',            // O - Pmnt Method
+      field('Payment Method') || field('Payment') || '',  // O - Pmnt Method
       '',                          // P - (empty)
       datePaid || '',              // Q - Date Paid
       checkNumber || '',           // R - Check #
@@ -737,7 +737,7 @@ app.post('/api/upload-file', upload.single('file'), async (req, res) => {
       body: JSON.stringify({
         model: 'anthropic/claude-3-haiku',
         messages: [{ role: 'user', content: [
-          { type: 'text', text: 'Extract from this contract: Owner Name, Full Property Address (street,city,state,zip), Phone Number, Email, Total Contract Amount, T.O.O.P (total out of pocket), Contract Date, Manufacturer, Shingle Type, Shingle Color, Ventilation Color, Drip Edge Color. Format each as: Field: Value' },
+          { type: 'text', text: 'Extract from this contract: Owner Name, Payment Method, Full Property Address (street,city,state,zip), Phone Number, Email, Total Contract Amount, T.O.O.P (total out of pocket), Contract Date, Manufacturer, Shingle Type, Shingle Color, Ventilation Color, Drip Edge Color. Format each as: Field: Value' },
           { type: 'image_url', image_url: { url: `data:application/pdf;base64,${pdfBase64}` } }
         ]}],
         max_tokens: 2000
