@@ -45,7 +45,7 @@ app.get('/api/jobs', async (req, res) => {
         const owner = (job[5] || '').toString().toLowerCase();
         return addr && owner && addr !== 'address' && owner !== 'owner';
       });
-      allJobs[month] = jobs.map((job, idx) => ({ row: idx + 2, address: job[0] || '', owner: job[5] || '', phone: job[15] || '', email: job[16] || '', totalCost: job[6] || '', tooop: job[11] || '' }));
+      allJobs[month] = jobs.map((job, idx) => ({ row: idx + 2, address: job[0] || '', owner: job[5] || '', phone: job[15] || '', totalCost: job[6] || '', tooop: job[11] || '' }));
     }
     res.json(allJobs);
   } catch (err) {
@@ -206,7 +206,7 @@ app.post('/api/save-extracted', async (req, res) => {
       totalBalanceDue || totalCost || '', // K - Total Balance Due
       toooP || '',                 // L - T.O.O.P
       depAmtHeld || '',            // M - DEP Amt Held
-      amountDue || '',             // N - Amount Due
+      '',                          // N - Amount Due (formula - don't overwrite)
       pmntMethod || '',            // O - Pmnt Method
       '',                          // P - (empty)
       datePaid || '',              // Q - Date Paid
@@ -412,7 +412,7 @@ app.get('/api/get-job', async (req, res) => {
       totalCost: job[6] || '', requiredDownPayment: job[7] || '', financeAmount: job[8] || '',
       additionalExpense: job[9] || '', totalBalanceDue: job[10] || '', toooP: job[11] || '',
       depAmtHeld: job[12] || '', amountDue: job[13] || '', pmntMethod: job[14] || '',
-      phone: job[15] || '', email: job[16] || '', datePaid: job[16] || '', checkNum: job[17] || '',
+      phone: job[15] || '', datePaid: job[16] || '', checkNum: job[17] || '',
       amountPaid: job[18] || '', dripEdgeColor: job[19] || '', ventilationColor: job[20] || '',
       manufacturer: job[21] || '', shingleType: job[22] || '', shingleColor: job[23] || '',
       estimatedSquares: job[24] || '', notes: job[25] || '',
@@ -459,10 +459,8 @@ app.post('/api/save-confirmed', async (req, res) => {
     if (data.totalBalanceDue !== undefined) rowData[10] = data.totalBalanceDue;
     if (data.toooP !== undefined) rowData[11] = data.toooP;
     if (data.depAmtHeld !== undefined) rowData[12] = data.depAmtHeld;
-    if (data.amountDue !== undefined) rowData[13] = data.amountDue;
     if (data.pmntMethod !== undefined) rowData[14] = data.pmntMethod;
     if (data.phone !== undefined) rowData[15] = data.phone;
-    if (data.email !== undefined) rowData[15] = data.email; // P = column 16, index 15
     if (data.datePaid !== undefined) rowData[16] = data.datePaid; // Q = column 17, index 16
     if (data.checkNum !== undefined) rowData[17] = data.checkNum; // R = column 18, index 17
     if (data.amountPaid !== undefined) rowData[18] = data.amountPaid; // S = column 19, index 18
