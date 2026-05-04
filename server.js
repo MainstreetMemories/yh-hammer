@@ -103,6 +103,7 @@ app.post('/api/upload-json', async (req, res) => {
         // Only accept if it looks like an email address
         return e && e.includes('@') && e.includes('.') ? e : '';
       })(),
+      pmntMethod: field('Payment Method') || field('Payment') || '',
       totalCost: field('TOTAL COST') || field('Total Cost') || field('Total') || field('Total Contract') || amounts[0]?.replace(/[$,]/g, '') || '0',
       toooP: field('T.O.O.P') || field('Out of Pocket') || amounts[1]?.replace(/[$,]/g, '') || '0',
       contractDate: field('DATE') || field('Contract Date') || field('Date') || '' || '',
@@ -217,7 +218,7 @@ app.post('/api/save-extracted', async (req, res) => {
       toooP || '',                 // L - T.O.O.P
       depAmtHeld || '',            // M - DEP Amt Held
       '',                          // N - Amount Due (formula - don't overwrite)
-      field('Payment Method') || field('Payment') || '',  // O - Pmnt Method
+      pmntMethod || '',            // O - Pmnt Method
       '',                          // P - (empty)
       datePaid || '',              // Q - Date Paid
       checkNumber || '',           // R - Check #
