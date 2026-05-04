@@ -405,14 +405,30 @@ app.get('/api/get-job', async (req, res) => {
     const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: month + '!A' + row + ':AL' + row });
     const job = r.data.values?.[0] || [];
     
+    // Also get customer info from Customer Information tab
+    let email = '';
+    try {
+      const custR = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: 'Customer Information!A:D' });
+      const custData = custR.data.values || [];
+      // Search for matching owner name in customer list
+      const ownerName = (job[5] || '').toLowerCase();
+      for (let i = 1; i < custData.length; i++) {  // Skip header row
+        const custName = (custData[i][0] || '').toLowerCase();
+        if (custName.includes(ownerName) || ownerName.includes(custName)) {
+          email = custData[i][3] || '';  // Column D = Email
+          break;
+        }
+      }
+    } catch(e) { console.log('Customer lookup error:', e.message); }
+    
     res.json({
-      row: row, // <-- Add row to the returned object
+      row: row,
       address: job[0] || '', certOfComp: job[1] || '', contractDate: job[2] || '',
       estimateDate: job[3] || '', installDate: job[4] || '', owner: job[5] || '',
       totalCost: job[6] || '', requiredDownPayment: job[7] || '', financeAmount: job[8] || '',
       additionalExpense: job[9] || '', totalBalanceDue: job[10] || '', toooP: job[11] || '',
       depAmtHeld: job[12] || '', amountDue: job[13] || '', pmntMethod: job[14] || '',
-      phone: job[15] || '', datePaid: job[16] || '', checkNum: job[17] || '',
+      phone: job[15] || '', email: email, datePaid: job[16] || '', checkNum: job[17] || '',
       amountPaid: job[18] || '', dripEdgeColor: job[19] || '', ventilationColor: job[20] || '',
       manufacturer: job[21] || '', shingleType: job[22] || '', shingleColor: job[23] || '',
       estimatedSquares: job[24] || '', notes: job[25] || '',
