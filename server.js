@@ -96,7 +96,11 @@ app.post('/api/upload-json', async (req, res) => {
       salesperson: field('Printed Name') || field('Printed') || field('Salesperson') || '',
       address: field('Address') || field('Street') || '',
       phone: field('Phone') || '',
-      email: field('Email') || '',
+      email: (() => {
+        const e = field('Email');
+        // Only accept if it looks like an email address
+        return e && e.includes('@') && e.includes('.') ? e : '';
+      })(),
       totalCost: field('TOTAL COST') || field('Total Cost') || field('Total') || field('Total Contract') || amounts[0]?.replace(/[$,]/g, '') || '0',
       toooP: field('T.O.O.P') || field('Out of Pocket') || amounts[1]?.replace(/[$,]/g, '') || '0',
       contractDate: field('DATE') || field('Contract Date') || field('Date') || '' || '',
@@ -160,7 +164,11 @@ app.post('/api/extract-data', async (req, res) => {
       salesperson: field('Printed Name') || field('Printed') || field('Salesperson') || '',
       address: field('Address') || field('Street') || '',
       phone: field('Phone') || '',
-      email: field('Email') || '',
+      email: (() => {
+        const e = field('Email');
+        // Only accept if it looks like an email address
+        return e && e.includes('@') && e.includes('.') ? e : '';
+      })(),
       totalCost: field('TOTAL COST') || field('Total Cost') || field('Total') || field('Total Contract') || amounts[0]?.replace(/[$,]/g, '') || '0',
       toooP: field('T.O.O.P') || field('Out of Pocket') || amounts[1]?.replace(/[$,]/g, '') || '0',
       contractDate: field('DATE') || field('Contract Date') || field('Date') || '' || '',
@@ -750,7 +758,11 @@ app.post('/api/upload-file', upload.single('file'), async (req, res) => {
       salesperson: field('Printed Name') || field('Printed') || field('Salesperson') || '',
       address: field('Address') || field('Street') || '',
       phone: field('Phone') || '',
-      email: field('Email') || '',
+      email: (() => {
+        const e = field('Email');
+        // Only accept if it looks like an email address
+        return e && e.includes('@') && e.includes('.') ? e : '';
+      })(),
       totalCost: field('TOTAL COST') || field('Total Cost') || field('Total') || field('Total Contract') || amounts[0]?.replace(/[$,]/g, '') || '0',
       toooP: field('T.O.O.P') || field('Out of Pocket') || amounts[1]?.replace(/[$,]/g, '') || '0',
       contractDate: field('DATE') || field('Contract Date') || field('Date') || '' || '',
