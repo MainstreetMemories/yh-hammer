@@ -40,12 +40,14 @@ app.get('/api/jobs', async (req, res) => {
     const allJobs = {};
     for (const month of months) {
       const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A:AE` });
-      const jobs = (r.data.values || []).filter((job, idx) => {
+      // Skip first 2 rows (new header at row 1, old header at row 2), start data at row 3
+      const rawJobs = r.data.values || [];
+      const jobs = rawJobs.slice(2).filter((job) => {
         const addr = (job[0] || '').toString().toLowerCase();
         const owner = (job[5] || '').toString().toLowerCase();
         return addr && owner && addr !== 'address' && owner !== 'owner';
       });
-      allJobs[month] = jobs.map((job, idx) => ({ row: idx + 2, address: job[0] || '', owner: job[5] || '', phone: job[15] || '', totalCost: job[6] || '', tooop: job[11] || '' }));
+      allJobs[month] = jobs.map((job, idx) => ({ row: idx + 3, address: job[0] || '', owner: job[5] || '', phone: job[15] || '', totalCost: job[6] || '', tooop: job[11] || '' }));
     }
     res.json(allJobs);
   } catch (err) {
@@ -238,14 +240,15 @@ app.post('/api/save-extracted', async (req, res) => {
     
     const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${month}!A:AE` });
     // Find first empty row (where both Address (col A) and Owner (col F) are empty)
-    // Skip header row (row 1), start from row 2
-    let nextRow = 2;
+    // Data starts at row 3 (row 1 = new header, row 2 = old header)
+    let nextRow = 3;
     if (r.data.values) {
-      for (let i = 0; i < r.data.values.length; i++) {
+      // Start from index 2 (row 3) since rows 1-2 are headers
+      for (let i = 2; i < r.data.values.length; i++) {
         const address = (r.data.values[i][0] || '').toString().trim();
         const owner = (r.data.values[i][5] || '').toString().trim();
         if (!address && !owner) {
-          nextRow = i + 1;  // i is 0-indexed, row is i+1, but data starts at row 2
+          nextRow = i + 1;  // i is 0-indexed, row is i+1
           break;
         }
       }
