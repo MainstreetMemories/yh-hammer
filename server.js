@@ -405,16 +405,19 @@ app.get('/api/get-job', async (req, res) => {
     const r = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: month + '!A' + row + ':AL' + row });
     const job = r.data.values?.[0] || [];
     
-    // Also get customer info from Customer Information tab
+    // Get email from Customer Information tab (matches by owner name OR address)
     let email = '';
     try {
       const custR = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: 'Customer Information!A:D' });
       const custData = custR.data.values || [];
-      // Search for matching owner name in customer list
       const ownerName = (job[5] || '').toLowerCase();
-      for (let i = 1; i < custData.length; i++) {  // Skip header row
+      const addr = (job[0] || '').toLowerCase();
+      for (let i = 1; i < custData.length; i++) {
         const custName = (custData[i][0] || '').toLowerCase();
-        if (custName.includes(ownerName) || ownerName.includes(custName)) {
+        const custAddr = (custData[i][1] || '').toLowerCase();
+        // Match by owner name OR address (partial match)
+        if (custName.includes(ownerName) || ownerName.includes(custName) ||
+            (addr && custAddr.includes(addr)) || (addr && addr.includes(custAddr))) {
           email = custData[i][3] || '';  // Column D = Email
           break;
         }
