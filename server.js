@@ -243,11 +243,21 @@ app.post('/api/save-extracted', async (req, res) => {
       }
     }
     
+    // Write in two parts to preserve column N (formula)
+    // Part 1: A to M (indices 0-12)
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${month}!A${nextRow}:AG${nextRow}`,
+      range: `${month}!A${nextRow}:M${nextRow}`,
       valueInputOption: 'USER_ENTERED',
-      requestBody: { values: [rowData] }
+      requestBody: { values: [rowData.slice(0, 13)] }
+    });
+    
+    // Part 2: O to AG (indices 14-32, skipping index 13 which is column N)
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${month}!O${nextRow}:AG${nextRow}`,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: [rowData.slice(14)] }
     });
     
     // Also save customer info to Customer Information tab
